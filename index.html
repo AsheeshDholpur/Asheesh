@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: 'Fira Code', 'Courier New', monospace;
-      background-color: rgba(13, 17, 23, 1); /* solid initially */
+      background-color: rgba(13, 17, 23, 1);
       color: #c9d1d9;
       display: flex;
       flex-direction: column;
@@ -21,9 +21,8 @@
       transition: background-color 0.5s ease, cursor 0.3s ease;
     }
 
-    /* 👇 Interactive hover effect on body */
     body:hover {
-      background-color: rgba(13, 17, 23, 0.85); /* semi-transparent on hover */
+      background-color: rgba(13, 17, 23, 0.85);
       cursor: url('https://cur.cursors-4u.net/cursors/cur-11/cur1016.cur'), pointer;
     }
 
@@ -85,6 +84,19 @@
     <a href="https://www.linkedin.com/in/YOUR-LINK" target="_blank">LinkedIn</a>
     <a href="mailto:your@email.com">Email</a>
   </div>
+
+  <!-- 👇 Device-specific redirection logic -->
+  <script>
+    const ua = navigator.userAgent.toLowerCase();
+
+    if (ua.includes("android")) {
+      window.location.href = "android.html";
+    } else if (ua.includes("windows nt")) {
+      window.location.href = "windows.html";
+    } else {
+      window.location.href = "default.html";
+    }
+  </script>
 
   <script type="application/ld+json">
   {
