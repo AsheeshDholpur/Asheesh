@@ -3,28 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P File Share</title>
+  <title>P2P File Transfer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>P2P File Sharing</h1>
+  <h1>P2P File Transfer</h1>
 
-  <div id="room-selection">
-    <button id="create-btn">🔧 Create Room</button>
-    <button id="join-btn">🔗 Join Room</button>
-  </div>
-
-  <div id="room-input" style="display:none;">
-    <input type="text" id="room-id" placeholder="Enter Room Code" />
-    <button id="connect-btn">Connect</button>
-  </div>
-
-  <div id="status-message"></div>
-
-  <div id="file-section" style="display:none;">
+  <div>
+    <input type="text" id="send-room" placeholder="Room to Send File" />
     <input type="file" id="file-input" />
     <button id="send-btn">Send File</button>
-    <a id="download-link" style="display:none;">⬇️ Download File</a>
+  </div>
+
+  <div style="margin-top:20px;">
+    <input type="text" id="receive-room" placeholder="Room to Receive File" />
+    <button id="receive-btn">Receive File</button>
+    <br/>
+    <a id="download-link" style="display:none;">⬇️ Download Received File</a>
   </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
