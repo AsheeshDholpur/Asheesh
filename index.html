@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P File Share</title>
+  <title>P2P Connect</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>P2P File Share</h1>
+  <h1>P2P Connect</h1>
 
-  <div id="sender">
-    <h2>Send a File</h2>
-    <input type="text" id="send-room" placeholder="Room code" />
-    <input type="file" id="file-input" />
-    <button id="send-btn">Send</button>
+  <div id="connect-section">
+    <input type="text" id="room-id" placeholder="Room code" />
+    <button id="connect-btn">Connect</button>
   </div>
 
-  <div id="receiver">
-    <h2>Receive a File</h2>
-    <input type="text" id="receive-room" placeholder="Room code" />
-    <button id="receive-btn">Connect</button>
+  <div id="status-message"></div>
+
+  <div id="file-section" style="display:none;">
+    <input type="file" id="file-input" />
+    <button id="send-btn">Send File</button>
     <a id="download-link" style="display:none;">Download File</a>
   </div>
 
