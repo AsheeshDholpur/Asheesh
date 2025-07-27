@@ -6,10 +6,9 @@
   <meta name="description" content="Asheesh – personal website. From Dholpur, Rajasthan, India." />
   <title>Asheesh | asheesh.in</title>
   <style>
-    /* Technical style */
     body {
       font-family: 'Fira Code', 'Courier New', monospace;
-      background: #0d1117;
+      background-color: rgba(13, 17, 23, 1); /* solid initially */
       color: #c9d1d9;
       display: flex;
       flex-direction: column;
@@ -19,7 +18,13 @@
       margin: 0;
       text-align: center;
       cursor: crosshair;
-      transition: background 0.5s ease, color 0.5s ease;
+      transition: background-color 0.5s ease, cursor 0.3s ease;
+    }
+
+    /* 👇 Interactive hover effect on body */
+    body:hover {
+      background-color: rgba(13, 17, 23, 0.85); /* semi-transparent on hover */
+      cursor: url('https://cur.cursors-4u.net/cursors/cur-11/cur1016.cur'), pointer;
     }
 
     h1 {
@@ -79,7 +84,6 @@
   <div class="links">
     <a href="https://www.linkedin.com/in/YOUR-LINK" target="_blank">LinkedIn</a>
     <a href="mailto:your@email.com">Email</a>
-    <!-- Add more if you want: GitHub, Twitter, etc. -->
   </div>
 
   <script type="application/ld+json">
