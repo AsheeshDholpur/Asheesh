@@ -1,91 +1,98 @@
 document.addEventListener("DOMContentLoaded", () => {
   console.log("✅ app.js loaded");
 
-  const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // 👈 your Render URL
+  const socket = io("https://webrtc-signaling-server-6uvt.onrender.com");
+
+  const connectBtn = document.getElementById("connect-btn");
+  const sendBtn = document.getElementById("send-btn");
+  const fileInput = document.getElementById("file-input");
+  const statusMsg = document.getElementById("status-message");
+  const fileSection = document.getElementById("file-section");
 
   let peerConnection;
   let dataChannel;
   let receivedBuffers = [];
+  let isInitiator = false;
+  let room = "";
 
   const config = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
   };
 
-  document.getElementById("send-btn").onclick = async () => {
-    console.log("📤 Send button clicked");
-    const room = document.getElementById("send-room").value;
-    const file = document.getElementById("file-input").files[0];
-    if (!room || !file) return alert("Room and file are required.");
+  connectBtn.onclick = () => {
+    room = document.getElementById("room-id").value;
+    if (!room) return alert("Enter a room code");
 
-    console.log("Joining room:", room);
     socket.emit("join", room);
+    console.log("Joining room:", room);
+    statusMsg.textContent = "Waiting for another peer to join...";
 
     peerConnection = new RTCPeerConnection(config);
-    dataChannel = peerConnection.createDataChannel("file");
-
-    dataChannel.onopen = () => {
-      console.log("✅ Data channel open, sending file...");
-      sendFile(file);
-    };
 
     peerConnection.onicecandidate = e => {
       if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
     };
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    socket.emit("signal", { room, data: { offer } });
-  };
-
-  document.getElementById("receive-btn").onclick = () => {
-    console.log("📥 Receive button clicked");
-    const room = document.getElementById("receive-room").value;
-    if (!room) return alert("Enter room code.");
-
-    console.log("Joining room:", room);
-    socket.emit("join", room);
-
-    peerConnection = new RTCPeerConnection(config);
 
     peerConnection.ondatachannel = event => {
       const receiveChannel = event.channel;
-      receiveChannel.onmessage = e => {
-        receivedBuffers.push(e.data);
-      };
+      statusMsg.textContent = "Connected! Waiting for file...";
+      fileSection.style.display = "block";
+
+      receiveChannel.onmessage = e => receivedBuffers.push(e.data);
       receiveChannel.onclose = () => {
         const received = new Blob(receivedBuffers);
-        const downloadLink = document.getElementById("download-link");
-        downloadLink.href = URL.createObjectURL(received);
-        downloadLink.download = "received_file";
-        downloadLink.style.display = "block";
-        downloadLink.textContent = "Download File";
-        console.log("✅ File received and ready to download");
+        const link = document.getElementById("download-link");
+        link.href = URL.createObjectURL(received);
+        link.download = "received_file";
+        link.style.display = "block";
+        link.textContent = "Download File";
+        statusMsg.textContent = "✅ File received!";
       };
-    };
-
-    peerConnection.onicecandidate = e => {
-      if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
     };
   };
 
-  socket.on("signal", async data => {
+  socket.on("created", () => {
+    isInitiator = true;
+    console.log("You created the room, waiting for peer...");
+  });
+
+  socket.on("ready", async () => {
+    if (isInitiator) {
+      dataChannel = peerConnection.createDataChannel("file");
+      dataChannel.onopen = () => {
+        statusMsg.textContent = "Connected! You can now send a file.";
+        fileSection.style.display = "block";
+      };
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      socket.emit("signal", { room, data: { offer } });
+    }
+  });
+
+  socket.on("signal", async ({ data }) => {
     if (data.offer) {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
-      socket.emit("signal", { room: document.getElementById("receive-room").value, data: { answer } });
+      socket.emit("signal", { room, data: { answer } });
     } else if (data.answer) {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
     } else if (data.candidate) {
       try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
       } catch (e) {
-        console.error("Error adding ICE candidate", e);
+        console.error("ICE candidate error", e);
       }
     }
   });
 
-  function sendFile(file) {
+  sendBtn.onclick = () => {
+    const file = fileInput.files[0];
+    if (!file || !dataChannel || dataChannel.readyState !== "open") {
+      return alert("No file or connection not ready.");
+    }
+
     const chunkSize = 16 * 1024;
     const reader = new FileReader();
     let offset = 0;
@@ -97,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         readSlice(offset);
       } else {
         dataChannel.close();
+        statusMsg.textContent = "✅ File sent!";
       }
     };
 
@@ -106,5 +114,5 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     readSlice(0);
-  }
+  };
 });
