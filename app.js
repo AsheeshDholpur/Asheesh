@@ -1,6 +1,6 @@
 console.log("✅ app.js loaded");
 
-const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // Use your Render URL
+const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // Use your signaling server URL
 
 let peerConnection;
 let dataChannel;
@@ -20,12 +20,14 @@ function showStatus(message) {
   }, 5000);
 }
 
-// Custom cursor
+// Custom cursor (optional UI flair)
 const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => {
-  cursor.style.left = `${e.clientX}px`;
-  cursor.style.top = `${e.clientY}px`;
-});
+if (cursor) {
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = `${e.clientX}px`;
+    cursor.style.top = `${e.clientY}px`;
+  });
+}
 
 // Sender
 document.getElementById("send-btn").onclick = async () => {
@@ -41,9 +43,9 @@ document.getElementById("send-btn").onclick = async () => {
     sendFile(file);
   };
 
-  dataChannel.onclose = () => {
-    console.log("📴 Data channel closed after sending.");
-    showStatus("📴 Transfer complete. Channel closed.");
+  dataChannel.onerror = e => {
+    console.error("Data Channel Error:", e);
+    showStatus("❌ Data channel error.");
   };
 
   peerConnection.onicecandidate = e => {
@@ -68,17 +70,20 @@ document.getElementById("receive-btn").onclick = () => {
     const receiveChannel = event.channel;
 
     receiveChannel.onmessage = e => {
+      // Metadata packet (JSON string)
       if (typeof e.data === "string") {
         try {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
+          showStatus(`Receiving: ${incomingFileInfo.fileName} (${(incomingFileInfo.fileSize / (1024*1024)).toFixed(2)} MB)`);
         } catch (err) {
           console.error("Invalid metadata:", err);
         }
         return;
       }
 
+      // Binary chunks
       receivedBuffers.push(e.data);
     };
 
@@ -111,14 +116,16 @@ document.getElementById("receive-btn").onclick = () => {
 socket.on("signal", async data => {
   try {
     if (data.offer) {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      socket.emit("signal", {
-        room: document.getElementById("receive-room").value.trim(),
-        data: { answer }
-      });
-    } else if (data.answer && !peerConnection.currentRemoteDescription && peerConnection.signalingState === "have-local-offer") {
+      if (!peerConnection.currentRemoteDescription) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit("signal", {
+          room: document.getElementById("receive-room").value.trim(),
+          data: { answer }
+        });
+      }
+    } else if (data.answer && !peerConnection.currentRemoteDescription) {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
     } else if (data.candidate) {
       await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -128,10 +135,11 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender
+// File sender with flow control and proper closing
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     console.warn("❌ Data channel not open.");
+    showStatus("❌ Data channel not open.");
     return;
   }
 
@@ -139,8 +147,22 @@ async function sendFile(file) {
     // Send file metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    const chunkSize = 16 * 1024;
+    const chunkSize = 16 * 1024; // 16 KB chunks
     let offset = 0;
+
+    // Wait helper for buffer amount low event
+    function waitForBufferLow() {
+      return new Promise(resolve => {
+        if (dataChannel.bufferedAmount < chunkSize * 4) {
+          resolve();
+        } else {
+          dataChannel.onbufferedamountlow = () => {
+            dataChannel.onbufferedamountlow = null;
+            resolve();
+          };
+        }
+      });
+    }
 
     while (offset < file.size) {
       if (dataChannel.readyState !== "open") {
@@ -150,21 +172,18 @@ async function sendFile(file) {
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
 
-      // Avoid flooding the buffer
-      while (dataChannel.bufferedAmount > 4 * chunkSize) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
+      await waitForBufferLow();
       dataChannel.send(buffer);
       offset += chunkSize;
     }
 
+    // Wait until all buffered data is sent
+    while (dataChannel.bufferedAmount > 0) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     showStatus("✅ File fully sent. Closing channel...");
-    setTimeout(() => {
-      if (dataChannel.readyState === "open") {
-        dataChannel.close();
-      }
-    }, 500); // Let last chunk flush
+    dataChannel.close();
 
   } catch (err) {
     console.error("❌ Send error:", err);
