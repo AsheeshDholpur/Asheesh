@@ -1,6 +1,6 @@
 console.log("✅ app.js loaded");
 
-const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // Use your signaling server URL
+const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // Use your Render URL
 
 let peerConnection;
 let dataChannel;
@@ -20,14 +20,12 @@ function showStatus(message) {
   }, 5000);
 }
 
-// Custom cursor (optional UI flair)
+// Custom cursor
 const cursor = document.querySelector('.cursor');
-if (cursor) {
-  document.addEventListener('mousemove', e => {
-    cursor.style.left = `${e.clientX}px`;
-    cursor.style.top = `${e.clientY}px`;
-  });
-}
+document.addEventListener('mousemove', e => {
+  cursor.style.left = `${e.clientX}px`;
+  cursor.style.top = `${e.clientY}px`;
+});
 
 // Sender
 document.getElementById("send-btn").onclick = async () => {
@@ -43,9 +41,13 @@ document.getElementById("send-btn").onclick = async () => {
     sendFile(file);
   };
 
-  dataChannel.onerror = e => {
-    console.error("Data Channel Error:", e);
-    showStatus("❌ Data channel error.");
+  dataChannel.onclose = () => {
+    showStatus("🔒 Data channel closed");
+  };
+
+  dataChannel.onerror = err => {
+    console.error("DataChannel error:", err);
+    showStatus("❌ Data channel error");
   };
 
   peerConnection.onicecandidate = e => {
@@ -70,20 +72,17 @@ document.getElementById("receive-btn").onclick = () => {
     const receiveChannel = event.channel;
 
     receiveChannel.onmessage = e => {
-      // Metadata packet (JSON string)
       if (typeof e.data === "string") {
         try {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
-          showStatus(`Receiving: ${incomingFileInfo.fileName} (${(incomingFileInfo.fileSize / (1024*1024)).toFixed(2)} MB)`);
         } catch (err) {
           console.error("Invalid metadata:", err);
         }
         return;
       }
 
-      // Binary chunks
       receivedBuffers.push(e.data);
     };
 
@@ -102,6 +101,11 @@ document.getElementById("receive-btn").onclick = () => {
       // Cleanup
       receivedBuffers = [];
       incomingFileInfo = null;
+    };
+
+    receiveChannel.onerror = err => {
+      console.error("ReceiveChannel error:", err);
+      showStatus("❌ Receive channel error");
     };
   };
 
@@ -132,25 +136,25 @@ socket.on("signal", async data => {
     }
   } catch (err) {
     console.error("❌ Signaling error:", err);
+    showStatus("❌ Signaling error: " + err.message);
   }
 });
 
-// File sender with flow control and proper closing
+// File sender with backpressure handling & readyState checks
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
-    console.warn("❌ Data channel not open.");
     showStatus("❌ Data channel not open.");
+    console.warn("Data channel not open");
     return;
   }
 
   try {
-    // Send file metadata first
+    // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
     const chunkSize = 16 * 1024; // 16 KB chunks
     let offset = 0;
 
-    // Wait helper for buffer amount low event
     function waitForBufferLow() {
       return new Promise(resolve => {
         if (dataChannel.bufferedAmount < chunkSize * 4) {
@@ -166,19 +170,30 @@ async function sendFile(file) {
 
     while (offset < file.size) {
       if (dataChannel.readyState !== "open") {
-        throw new Error("Data channel closed before sending finished.");
+        throw new Error("Data channel closed prematurely.");
       }
 
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
 
       await waitForBufferLow();
+
+      if (dataChannel.readyState !== "open") {
+        throw new Error("Data channel closed prematurely.");
+      }
+
       dataChannel.send(buffer);
       offset += chunkSize;
+
+      // Optional: show progress
+      showStatus(`📤 Sending: ${((offset / file.size) * 100).toFixed(1)}%`);
     }
 
-    // Wait until all buffered data is sent
+    // Wait for buffered data to be sent before closing
     while (dataChannel.bufferedAmount > 0) {
+      if (dataChannel.readyState !== "open") {
+        throw new Error("Data channel closed before all data sent.");
+      }
       await new Promise(r => setTimeout(r, 100));
     }
 
@@ -187,7 +202,7 @@ async function sendFile(file) {
 
   } catch (err) {
     console.error("❌ Send error:", err);
-    showStatus("❌ Failed to send file. Try again.");
+    showStatus("❌ Failed to send file: " + err.message);
   } finally {
     document.getElementById("file-input").value = "";
   }
