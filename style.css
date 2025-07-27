@@ -6,10 +6,10 @@ body {
 }
 
 h1 {
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
-#sender, #receiver {
+#connect-section, #file-section {
   background: white;
   padding: 20px;
   margin: 20px auto;
@@ -22,4 +22,10 @@ input, button {
   margin: 10px;
   padding: 10px;
   width: 80%;
+}
+
+#status-message {
+  font-weight: bold;
+  margin: 20px;
+  color: green;
 }
