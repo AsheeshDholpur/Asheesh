@@ -1,3 +1,9 @@
+// 🖱️ Fancy custom cursor
+const cursor = document.querySelector('.cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = `${e.clientX}px`;
+  cursor.style.top = `${e.clientY}px`;
+});
 console.log("✅ app.js loaded");
 const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // your Render signaling server
 
@@ -102,9 +108,3 @@ function sendFile(file) {
 
   readSlice(0);
 }
-// 🖱️ Fancy custom cursor
-const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => {
-  cursor.style.left = `${e.clientX}px`;
-  cursor.style.top = `${e.clientY}px`;
-});
