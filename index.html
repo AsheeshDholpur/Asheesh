@@ -7,20 +7,25 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>P2P File Transfer</h1>
+  <div class="container">
+    <h1>🔗 P2P File Transfer</h1>
 
-  <div>
-    <input type="text" id="send-room" placeholder="Room to Send File" />
-    <input type="file" id="file-input" />
-    <button id="send-btn">Send File</button>
+    <div class="card">
+      <h2>📤 Send File</h2>
+      <input type="text" id="send-room" placeholder="Room ID to Send" />
+      <input type="file" id="file-input" />
+      <button id="send-btn">Send File</button>
+    </div>
+
+    <div class="card">
+      <h2>📥 Receive File</h2>
+      <input type="text" id="receive-room" placeholder="Room ID to Receive" />
+      <button id="receive-btn">Receive File</button>
+      <a id="download-link" class="download-link" style="display:none;">⬇️ Download File</a>
+    </div>
   </div>
 
-  <div style="margin-top:20px;">
-    <input type="text" id="receive-room" placeholder="Room to Receive File" />
-    <button id="receive-btn">Receive File</button>
-    <br/>
-    <a id="download-link" style="display:none;">⬇️ Download Received File</a>
-  </div>
+  <div class="cursor"></div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="app.js"></script>
