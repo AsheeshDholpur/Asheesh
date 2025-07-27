@@ -15,7 +15,9 @@ const config = {
 const statusEl = document.getElementById("status");
 function showStatus(message) {
   statusEl.textContent = message;
-  setTimeout(() => statusEl.textContent = "", 5000);
+  setTimeout(() => {
+    if (statusEl.textContent === message) statusEl.textContent = "";
+  }, 5000);
 }
 
 // Custom cursor
@@ -27,7 +29,7 @@ document.addEventListener('mousemove', e => {
 
 // Sender
 document.getElementById("send-btn").onclick = async () => {
-  const room = document.getElementById("send-room").value;
+  const room = document.getElementById("send-room").value.trim();
   const file = document.getElementById("file-input").files[0];
   if (!room || !file) return alert("Room and file are required.");
 
@@ -37,6 +39,11 @@ document.getElementById("send-btn").onclick = async () => {
   dataChannel.onopen = () => {
     showStatus("✅ Connection open, sending file...");
     sendFile(file);
+  };
+
+  dataChannel.onclose = () => {
+    console.log("📴 Data channel closed after sending.");
+    showStatus("📴 Transfer complete. Channel closed.");
   };
 
   peerConnection.onicecandidate = e => {
@@ -52,7 +59,7 @@ document.getElementById("send-btn").onclick = async () => {
 
 // Receiver
 document.getElementById("receive-btn").onclick = () => {
-  const room = document.getElementById("receive-room").value;
+  const room = document.getElementById("receive-room").value.trim();
   if (!room) return alert("Enter room code.");
 
   peerConnection = new RTCPeerConnection(config);
@@ -104,16 +111,14 @@ document.getElementById("receive-btn").onclick = () => {
 socket.on("signal", async data => {
   try {
     if (data.offer) {
-      if (!peerConnection.currentRemoteDescription) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        socket.emit("signal", {
-          room: document.getElementById("receive-room").value,
-          data: { answer }
-        });
-      }
-    } else if (data.answer && !peerConnection.currentRemoteDescription) {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      socket.emit("signal", {
+        room: document.getElementById("receive-room").value.trim(),
+        data: { answer }
+      });
+    } else if (data.answer && !peerConnection.currentRemoteDescription && peerConnection.signalingState === "have-local-offer") {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
     } else if (data.candidate) {
       await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -130,32 +135,41 @@ async function sendFile(file) {
     return;
   }
 
-  dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
+  try {
+    // Send file metadata first
+    dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-  const chunkSize = 16 * 1024;
-  let offset = 0;
+    const chunkSize = 16 * 1024;
+    let offset = 0;
 
-  while (offset < file.size) {
-    const slice = file.slice(offset, offset + chunkSize);
-    const buffer = await slice.arrayBuffer();
+    while (offset < file.size) {
+      if (dataChannel.readyState !== "open") {
+        throw new Error("Data channel closed before sending finished.");
+      }
 
-    try {
-      while (dataChannel.bufferedAmount > 16 * chunkSize) {
+      const slice = file.slice(offset, offset + chunkSize);
+      const buffer = await slice.arrayBuffer();
+
+      // Avoid flooding the buffer
+      while (dataChannel.bufferedAmount > 4 * chunkSize) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       dataChannel.send(buffer);
       offset += chunkSize;
-
-    } catch (err) {
-      console.error("❌ Send error:", err);
-      break;
     }
+
+    showStatus("✅ File fully sent. Closing channel...");
+    setTimeout(() => {
+      if (dataChannel.readyState === "open") {
+        dataChannel.close();
+      }
+    }, 500); // Let last chunk flush
+
+  } catch (err) {
+    console.error("❌ Send error:", err);
+    showStatus("❌ Failed to send file. Try again.");
+  } finally {
+    document.getElementById("file-input").value = "";
   }
-
-  dataChannel.close();
-  showStatus("✅ File sent!");
-
-  // Reset input for next file
-  document.getElementById("file-input").value = "";
 }
