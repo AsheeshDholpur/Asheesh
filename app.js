@@ -1,3 +1,4 @@
+console.log("✅ app.js loaded");
 const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // 👈 use your Render URL here
 
 let peerConnection;
