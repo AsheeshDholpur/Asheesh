@@ -1,16 +1,10 @@
-// 🖱️ Fancy custom cursor
-const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => {
-  cursor.style.left = `${e.clientX}px`;
-  cursor.style.top = `${e.clientY}px`;
-});
 console.log("✅ app.js loaded");
-const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // your Render signaling server
+const socket = io("https://webrtc-signaling-server-6uvt.onrender.com"); // replace if different
 
 let peerConnection;
 let dataChannel;
-let fileReader;
 let receivedBuffers = [];
+let incomingFileInfo = null;
 
 const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
@@ -28,6 +22,7 @@ document.getElementById("send-btn").onclick = async () => {
   dataChannel = peerConnection.createDataChannel("file");
 
   dataChannel.onopen = () => {
+    console.log("✅ DataChannel open");
     sendFile(file);
   };
 
@@ -51,16 +46,26 @@ document.getElementById("receive-btn").onclick = () => {
 
   peerConnection.ondatachannel = event => {
     const receiveChannel = event.channel;
+
     receiveChannel.onmessage = e => {
+      if (typeof e.data === "string") {
+        try {
+          incomingFileInfo = JSON.parse(e.data);
+        } catch (err) {
+          console.error("Invalid metadata:", err);
+        }
+        return;
+      }
       receivedBuffers.push(e.data);
     };
+
     receiveChannel.onclose = () => {
       const received = new Blob(receivedBuffers);
       const downloadLink = document.getElementById("download-link");
       downloadLink.href = URL.createObjectURL(received);
-      downloadLink.download = "received_file";
+      downloadLink.download = incomingFileInfo?.fileName || "received_file";
       downloadLink.style.display = "block";
-      downloadLink.textContent = "⬇️ Download File";
+      downloadLink.textContent = `⬇️ Download ${downloadLink.download}`;
     };
   };
 
@@ -69,42 +74,64 @@ document.getElementById("receive-btn").onclick = () => {
   };
 };
 
+// Signaling
 socket.on("signal", async data => {
-  if (data.offer) {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit("signal", { room: document.getElementById("receive-room").value, data: { answer } });
-  } else if (data.answer) {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-  } else if (data.candidate) {
-    try {
+  try {
+    if (data.offer) {
+      if (!peerConnection.currentRemoteDescription) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit("signal", { room: document.getElementById("receive-room").value, data: { answer } });
+      }
+    } else if (data.answer && !peerConnection.currentRemoteDescription) {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    } else if (data.candidate) {
       await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (e) {
-      console.error("Error adding ICE candidate", e);
     }
+  } catch (err) {
+    console.error("❌ Signaling error:", err);
   }
 });
 
-function sendFile(file) {
+// Safe File Sender with Rate Limit
+async function sendFile(file) {
+  if (!dataChannel || dataChannel.readyState !== "open") {
+    console.warn("❌ Data channel not open.");
+    return;
+  }
+
+  // Send metadata
+  dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
+
   const chunkSize = 16 * 1024;
-  const reader = new FileReader();
   let offset = 0;
 
-  reader.onload = e => {
-    dataChannel.send(e.target.result);
-    offset += e.target.result.byteLength;
-    if (offset < file.size) {
-      readSlice(offset);
-    } else {
-      dataChannel.close();
+  while (offset < file.size) {
+    const slice = file.slice(offset, offset + chunkSize);
+    const buffer = await slice.arrayBuffer();
+
+    try {
+      while (dataChannel.bufferedAmount > 16 * chunkSize) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      dataChannel.send(buffer);
+      offset += chunkSize;
+
+    } catch (err) {
+      console.error("❌ Send error:", err);
+      break;
     }
-  };
+  }
 
-  const readSlice = o => {
-    const slice = file.slice(offset, o + chunkSize);
-    reader.readAsArrayBuffer(slice);
-  };
-
-  readSlice(0);
+  console.log("✅ File sent, closing channel.");
+  dataChannel.close();
 }
+
+// Fancy cursor
+const cursor = document.querySelector('.cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = `${e.clientX}px`;
+  cursor.style.top = `${e.clientY}px`;
+});
