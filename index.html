@@ -1,35 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P File Transfer</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>🔗 P2P File Transfer</h1>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
-    <div id="status"></div>
+/* Reset/Global */
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
 
-    <div class="card">
-      <h2>📤 Send File</h2>
-      <input type="text" id="send-room" placeholder="Room ID to Send" />
-      <input type="file" id="file-input" />
-      <button id="send-btn">Send File</button>
-    </div>
+.container {
+  max-width: 370px;
+  margin: 60px auto 0;
+  padding: 32px 24px 18px 24px;
+  border-radius: 28px;
+  box-shadow: 0 8px 42px 0 rgba(20,16,61,0.17), 0 1.5px 6px 0 rgba(92,80,198,0.10);
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.22);
+}
 
-    <div class="card">
-      <h2>📥 Receive File</h2>
-      <input type="text" id="receive-room" placeholder="Room ID to Receive" />
-      <button id="receive-btn">Receive File</button>
-      <a id="download-link" class="download-link" style="display:none;">⬇️ Download File</a>
-    </div>
-  </div>
+h1 {
+  text-align: center;
+  font-size: 2.3em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin-bottom: 12px;
+  color: #fff;
+  text-shadow: 0 1.5px 8px rgba(60,31,100,0.05);
+}
 
-  <div class="cursor"></div>
+h2 {
+  font-size: 1.05em;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 18px;
+  margin-top: 2px;
+}
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+.card {
+  background: rgba(255,255,255,0.35);
+  box-shadow: 0 3px 24px 0 rgba(92,80,198,0.06);
+  border-radius: 18px;
+  padding: 18px 18px 14px 18px;
+  margin: 18px 0;
+  border: 1.5px solid rgba(255,255,255,0.19);
+  backdrop-filter: blur(1.5px);
+  transition: box-shadow 0.2s;
+}
+
+input[type="text"], input[type="file"] {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #E6E9F0;
+  margin-bottom: 12px;
+  font-size: 1em;
+  width: 100%;
+  outline: none;
+  transition: border .18s, box-shadow .18s;
+  background: rgba(255,255,255,0.54);
+  box-shadow: 0 1.5px 7px 0 rgba(130,100,220,0.04);
+}
+
+input[type="file"] {
+  padding: 6px;
+  background: transparent;
+}
+
+input[type="text"]:focus, input[type="file"]:focus {
+  border-color: #764ba2;
+  box-shadow: 0 1.5px 8px 0 rgba(92,80,198,0.11);
+}
+
+button {
+  padding: 10px 20px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(97deg,#764ba2 55%, #667eea 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1em;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 2.5px 15px 0 rgba(120,90,170,0.11);
+  transition: background 0.18s, transform 0.09s, box-shadow 0.18s;
+}
+button:hover {
+  background: linear-gradient(90deg,#764ba2 75%, #667eea 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 28px 0 rgba(120,90,170,0.22);
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 15px;
+  text-decoration: none;
+  color: #5143e3;
+  font-weight: bold;
+  padding: 9px 16px;
+  border-radius: 6px;
+  background: rgba(170,150,255,.11);
+  box-shadow: 0 1px 5px 0 rgba(80,38,170,0.07);
+  transition: color 0.12s, background 0.12s;
+}
+.download-link:hover {
+  background: #667eea;
+  color: #fff;
+}
+
+#status {
+  text-align: center;
+  color: #222137;
+  font-size: 1.04em;
+  min-height: 16px;
+  margin: 0 0 15px 0;
+  font-weight: 500;
+  text-shadow: 0 1px 4px #fff3;
+}
+
+/* ==== Liquid Cursor Effect ==== */
+.cursor {
+  position: fixed;
+  pointer-events: none;
+  top: 0; left: 0;
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 35% 40%, #764ba2 60%, #fff0 100%);
+  border-radius: 50%;
+  mix-blend-mode: color-dodge;
+  box-shadow: 0 2.5px 18px 0 #764ba2aa;
+  transition: transform 0.10s cubic-bezier(0,.7,.5,1.1);
+  z-index: 2000;
+  opacity: 0.65;
+  will-change: transform, width, height;
+}
