@@ -1,114 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+/* RESET & GLOBAL */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
 html, body {
   height: 100%;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #121212;
-  color: #fff;
-  overflow-x: hidden;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #232144;
+  overflow: hidden;
 }
 
+/* CONTAINER & GLASS STYLE */
 body {
+  min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 38px;
+  position: relative;
+  z-index: 1;
 }
 
 .container {
   text-align: center;
   max-width: 400px;
-  width: 90%;
-  margin: 40px auto;
+  width: 90vw;
+  margin: 0 auto;
+  padding: 32px 22px 14px 22px;
+  background: rgba(255,255,255,0.22);
+  box-shadow: 0 4px 38px 0 rgba(92,80,198,0.14), 0 1px 6px 0 rgba(50,6,190,0.06);
+  border-radius: 23px;
+  backdrop-filter: blur(12px);
+  border: 1.8px solid rgba(255,255,255,0.20);
+  z-index: 2;
 }
 
+/* MAIN TITLE */
 h1 {
-  font-size: 2rem;
-  margin-bottom: 30px;
-  color: #0ff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 22px;
+  color: #fff;
+  letter-spacing: 0.015em;
+  text-shadow: 0 2px 15px #a48fff48;
+}
+
+/* SUBHEADERS */
+h2 {
+  font-size: 1.05em;
+  font-weight: 500;
+  color: #5143e3;
+  margin-bottom: 18px;
+  margin-top: 2px;
+  letter-spacing:0.02em;
 }
 
 .card {
-  background: #1e1e1e;
-  border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
-}
-
-h2 {
-  margin-bottom: 20px;
-  color: #00e0e0;
+  background: rgba(255,255,255,0.31);
+  box-shadow: 0 4px 28px 0 rgba(150,118,240,0.04);
+  border-radius: 17px;
+  padding: 18px 15px 12px 15px;
+  margin-bottom: 17px;
+  border: 1px solid rgba(255,255,255,0.17);
+  backdrop-filter: blur(2.5px);
+  transition: box-shadow 0.15s;
 }
 
 input[type="text"],
 input[type="file"],
 button {
   display: block;
-  margin: 10px auto;
-  padding: 10px 15px;
-  font-size: 1rem;
-  width: 90%;
-  max-width: 300px;
-  background: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
+  margin: 10px auto 12px auto;
+  padding: 10px 14px;
+  font-size: 1em;
+  width: 94%;
+  max-width: 285px;
+  background: rgba(255,255,255,0.62);
+  color: #292650;
+  border: 1.2px solid #d6d0f7;
   border-radius: 8px;
-  transition: all 0.2s ease-in-out;
+  transition: border 0.18s, box-shadow 0.17s;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 1.5px 8px 0 rgba(130,100,220,0.04);
+}
+
+input[type="file"] {
+  padding: 8px;
+  background: transparent;
 }
 
 input[type="text"]:focus,
 input[type="file"]:focus {
-  border-color: #0ff;
-  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 2.5px 12px 0 rgba(92,80,198,0.08);
 }
 
 button {
-  background: #0ff;
-  color: #000;
+  background: linear-gradient(95deg, #764ba2 60%, #667eea 100%);
+  color: #fff;
   font-weight: bold;
-  cursor: pointer;
+  font-size: 1em;
+  letter-spacing: 0.02em;
   border: none;
+  border-radius: 9px;
+  padding: 11px 17px;
+  margin-bottom: 8px;
+  transition: background 0.15s, transform 0.09s, box-shadow 0.16s;
+  box-shadow: 0 2.5px 15px 0 rgba(120,90,170,0.11);
+  cursor: pointer;
 }
-
 button:hover {
-  background: #00cccc;
-  transform: scale(1.02);
+  background: linear-gradient(90deg, #564ba2 65%, #667eea 100%);
+  transform: scale(1.04) translateY(-2px);
+  box-shadow: 0 6px 24px 0 rgba(92, 80, 198, 0.22);
 }
 
 .download-link {
-  margin-top: 15px;
   display: inline-block;
-  font-size: 1.1rem;
-  color: #0ff;
+  margin-top: 13px;
   text-decoration: none;
+  color: #4c36f7;
+  font-weight: bold;
+  padding: 8px 15px;
+  border-radius: 7px;
+  background: rgba(170,150,255,0.18);
+  box-shadow: 0 1.5px 8px 0 rgba(90,40,170,0.07);
+  transition: color 0.13s, background 0.13s;
+  font-size: 1.02em;
 }
-
 .download-link:hover {
-  color: #00cccc;
+  background: #667eea;
+  color: #fff;
 }
 
+/* Status Bar */
 #status {
-  margin-bottom: 10px;
-  font-size: 0.95rem;
-  color: #88f8f8;
+  text-align: center;
+  font-size: 1.01em;
+  min-height: 15px;
+  margin-bottom: 11px;
+  font-weight: 500;
+  color: #764ba2;
+  letter-spacing: .01em;
+  text-shadow: 0 1.8px 7px #fff3;
 }
 
+/* ==== Liquid Cursor Effect ==== */
 .cursor {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #0ff;
-  border-radius: 50%;
   position: fixed;
   pointer-events: none;
-  z-index: 10000;
-  transform: translate(-50%, -50%);
-  transition: transform 0.1s ease-out;
+  top: 0; left: 0;
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 35% 45%, #764ba2 60%, #fff0 100%);
+  border-radius: 50%;
+  mix-blend-mode: color-dodge;
+  box-shadow: 0 2.5px 20px 0 #764ba2aa;
+  transition: transform 0.07s cubic-bezier(0,.7,.5,1.2), opacity 0.15s;
+  z-index: 2000;
+  opacity: 0.68;
+  will-change: transform, width, height;
+  pointer-events: none;
 }
 
-body:hover .cursor {
-  mix-blend-mode: difference;
+/* Responsive */
+@media (max-width: 520px) {
+  .container {
+    padding: 18px 5vw 10vw 5vw;
+    border-radius: 14px;
+  }
+  .card { border-radius: 10px; }
 }
+
