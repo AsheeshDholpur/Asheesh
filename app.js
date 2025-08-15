@@ -20,12 +20,7 @@ if (statusEl.textContent === message) statusEl.textContent = "";
 }, 5000);
 }
 
-// Custom cursor
-const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => {
-cursor.style.left = `${e.clientX}px`;
-cursor.style.top = `${e.clientY}px`;
-});
+// FIXED: Removed cursor code that was causing errors
 
 // Sender
 document.getElementById("send-btn").onclick = async () => {
