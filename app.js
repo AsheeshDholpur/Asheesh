@@ -166,7 +166,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with increased speed and checks
+// File sender with balanced speed and stability
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -179,9 +179,9 @@ async function sendFile(file) {
     // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    // Speed: double previous (512 KB / 8 MB)
-    const chunkSize = 512 * 1024; // 512 KB
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 8 MB
+    // Balanced speed and reliability
+    const chunkSize = 384 * 1024; // 384 KB
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 12; // 4.5 MB
 
     let offset = 0;
 
@@ -190,7 +190,7 @@ async function sendFile(file) {
         if (dataChannel.readyState !== "open") {
           throw new Error("Data channel closed prematurely in waitForBufferLow()");
         }
-        if (dataChannel.bufferedAmount < chunkSize * 16) {
+        if (dataChannel.bufferedAmount < chunkSize * 12) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
