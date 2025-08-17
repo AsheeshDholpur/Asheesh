@@ -47,20 +47,19 @@ html, body {
 }
 
 body {
-  position: relative;
-  min-height: 100vh;
-  width: 100vw;
-  background: var(--bg-primary);
-  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
-  color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--bg-primary);
+  background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
-
 
 .container {
   text-align: center;
@@ -221,9 +220,6 @@ button:hover {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* FIXED: Removed cursor overlay that was blocking interactions */
-/* .cursor { ... } - REMOVED */
-
 /* Premium Font Loading */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
@@ -243,4 +239,45 @@ button:hover {
     padding: 40px 32px;
     border-radius: 24px;
   }
+}
+
+/* --- Progress Bar Styling --- */
+.progress-group {
+  margin-top: 24px;
+  text-align: center;
+  width: 100%;
+}
+progress {
+  width: 100%;
+  height: 18px;
+  border-radius: 8px;
+  background: var(--bg-glass);
+  box-shadow: 0 2px 12px var(--shadow-primary);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+#send-progress::-webkit-progress-value {
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 8px;
+}
+#receive-progress::-webkit-progress-value {
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-tertiary));
+  border-radius: 8px;
+}
+progress::-webkit-progress-bar {
+  background: var(--bg-glass);
+  border-radius: 8px;
+}
+#send-progress::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 8px;
+}
+#receive-progress::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-tertiary));
+  border-radius: 8px;
+}
+progress {
+  color: var(--accent-primary);
+  background-color: var(--bg-glass);
+  border-radius: 8px;
 }
