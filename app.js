@@ -11,13 +11,33 @@ const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
-// Status helper
+// Status helper (still used for quick alerts/top notifications)
 const statusEl = document.getElementById("status");
 function showStatus(message) {
   statusEl.textContent = message;
   setTimeout(() => {
     if (statusEl.textContent === message) statusEl.textContent = "";
   }, 5000);
+}
+
+// ---- PROGRESS BAR HELPERS ----
+function showProgress(type, percent, text) {
+  if (type === "send") {
+    document.getElementById("send-progress-group").style.display = "block";
+    document.getElementById("send-progress").value = percent;
+    document.getElementById("send-progress-text").textContent = text;
+  } else if (type === "receive") {
+    document.getElementById("receive-progress-group").style.display = "block";
+    document.getElementById("receive-progress").value = percent;
+    document.getElementById("receive-progress-text").textContent = text;
+  }
+}
+function hideProgress(type) {
+  if (type === "send") {
+    document.getElementById("send-progress-group").style.display = "none";
+  } else if (type === "receive") {
+    document.getElementById("receive-progress-group").style.display = "none";
+  }
 }
 
 // Sender
@@ -36,11 +56,13 @@ document.getElementById("send-btn").onclick = async () => {
 
   dataChannel.onclose = () => {
     showStatus("🔒 Data channel closed");
+    hideProgress("send");
   };
 
   dataChannel.onerror = err => {
     console.error("DataChannel error:", err);
     showStatus("❌ Data channel error");
+    hideProgress("send");
   };
 
   peerConnection.onicecandidate = e => {
@@ -70,6 +92,9 @@ document.getElementById("receive-btn").onclick = () => {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
+
+          // Reset progress at the start
+          showProgress("receive", 0, `📥 Receiving: 0%`);
         } catch (err) {
           console.error("Invalid metadata:", err);
         }
@@ -82,7 +107,7 @@ document.getElementById("receive-btn").onclick = () => {
       if (incomingFileInfo && incomingFileInfo.fileSize) {
         let receivedBytes = receivedBuffers.reduce((acc, curr) => acc + curr.byteLength, 0);
         let percent = ((receivedBytes / incomingFileInfo.fileSize) * 100).toFixed(1);
-        showStatus(`📥 Receiving: ${percent}%`);
+        showProgress("receive", percent, `📥 Receiving: ${percent}%`);
       }
     };
 
@@ -97,6 +122,7 @@ document.getElementById("receive-btn").onclick = () => {
       downloadLink.style.display = "block";
 
       showStatus(`✅ File received: ${fileName}`);
+      hideProgress("receive");
 
       // Cleanup
       receivedBuffers = [];
@@ -106,6 +132,7 @@ document.getElementById("receive-btn").onclick = () => {
     receiveChannel.onerror = err => {
       console.error("ReceiveChannel error:", err);
       showStatus("❌ Receive channel error");
+      hideProgress("receive");
     };
   };
 
@@ -145,6 +172,7 @@ async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
     console.warn("Data channel not open");
+    hideProgress("send");
     return;
   }
 
@@ -168,6 +196,9 @@ async function sendFile(file) {
       });
     }
 
+    // Reset progress at the start
+    showProgress("send", 0, `📤 Sending: 0%`);
+
     while (offset < file.size) {
       if (dataChannel.readyState !== "open") {
         throw new Error("Data channel closed prematurely.");
@@ -186,7 +217,8 @@ async function sendFile(file) {
       offset += chunkSize;
 
       // Show sender progress
-      showStatus(`📤 Sending: ${((offset / file.size) * 100).toFixed(1)}%`);
+      let percent = ((offset / file.size) * 100).toFixed(1);
+      showProgress("send", percent, `📤 Sending: ${percent}%`);
     }
 
     // Wait for buffered data to be sent before closing
@@ -198,12 +230,15 @@ async function sendFile(file) {
     }
 
     showStatus("✅ File fully sent. Closing channel...");
+    hideProgress("send");
     dataChannel.close();
 
   } catch (err) {
     console.error("❌ Send error:", err);
     showStatus("❌ Failed to send file: " + err.message);
+    hideProgress("send");
   } finally {
     document.getElementById("file-input").value = "";
+    hideProgress("send");
   }
 }
