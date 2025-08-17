@@ -92,7 +92,6 @@ document.getElementById("receive-btn").onclick = () => {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
-
           // Reset progress at the start
           showProgress("receive", 0, `📥 Receiving: 0%`);
         } catch (err) {
@@ -167,7 +166,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with faster chunking & buffer settings
+// File sender with ultra-fast chunking & buffer settings
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -181,14 +180,14 @@ async function sendFile(file) {
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
     // --------- SPEED OPTIMIZATIONS ----------
-    const chunkSize = 64 * 1024; // 64 KB chunks
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // Increase window
+    const chunkSize = 512 * 1024; // 512 KB per chunk
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 32; // 16 MB window
 
     let offset = 0;
 
     function waitForBufferLow() {
       return new Promise(resolve => {
-        if (dataChannel.bufferedAmount < chunkSize * 16) {
+        if (dataChannel.bufferedAmount < chunkSize * 32) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
