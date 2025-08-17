@@ -11,7 +11,7 @@ const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
-// Status helper (still used for quick alerts/top notifications)
+// Status helper (quick alerts/top notifications)
 const statusEl = document.getElementById("status");
 function showStatus(message) {
   statusEl.textContent = message;
@@ -166,7 +166,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with ultra-fast chunking & buffer settings
+// File sender with speed and stability
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -179,19 +179,25 @@ async function sendFile(file) {
     // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    // --------- SPEED OPTIMIZATIONS ----------
-    const chunkSize = 512 * 1024; // 512 KB per chunk
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 32; // 16 MB window
+    // Speed, but not too extreme (safe for most devices)
+    const chunkSize = 256 * 1024; // 256 KB
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 4 MB
 
     let offset = 0;
 
     function waitForBufferLow() {
       return new Promise(resolve => {
-        if (dataChannel.bufferedAmount < chunkSize * 32) {
+        if (dataChannel.readyState !== "open") {
+          throw new Error("Data channel closed prematurely in waitForBufferLow()");
+        }
+        if (dataChannel.bufferedAmount < chunkSize * 16) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
             dataChannel.onbufferedamountlow = null;
+            if (dataChannel.readyState !== "open") {
+              throw new Error("Data channel closed prematurely in onbufferedamountlow()");
+            }
             resolve();
           };
         }
@@ -203,7 +209,7 @@ async function sendFile(file) {
 
     while (offset < file.size) {
       if (dataChannel.readyState !== "open") {
-        throw new Error("Data channel closed prematurely.");
+        throw new Error("Data channel closed prematurely (in send loop).");
       }
 
       const slice = file.slice(offset, offset + chunkSize);
@@ -212,7 +218,7 @@ async function sendFile(file) {
       await waitForBufferLow();
 
       if (dataChannel.readyState !== "open") {
-        throw new Error("Data channel closed prematurely.");
+        throw new Error("Data channel closed prematurely (before send).");
       }
 
       dataChannel.send(buffer);
@@ -226,7 +232,7 @@ async function sendFile(file) {
     // Wait for buffered data to be sent before closing
     while (dataChannel.bufferedAmount > 0) {
       if (dataChannel.readyState !== "open") {
-        throw new Error("Data channel closed before all data sent.");
+        throw new Error("Data channel closed before all data sent (after loop).");
       }
       await new Promise(r => setTimeout(r, 100));
     }
