@@ -166,7 +166,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with speed and stability
+// File sender with increased speed and checks
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -179,9 +179,9 @@ async function sendFile(file) {
     // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    // Speed, but not too extreme (safe for most devices)
-    const chunkSize = 256 * 1024; // 256 KB
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 4 MB
+    // Speed: double previous (512 KB / 8 MB)
+    const chunkSize = 512 * 1024; // 512 KB
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 8 MB
 
     let offset = 0;
 
