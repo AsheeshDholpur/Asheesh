@@ -11,7 +11,6 @@ const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
-// Status helper (quick alerts/top notifications)
 const statusEl = document.getElementById("status");
 function showStatus(message) {
   statusEl.textContent = message;
@@ -20,7 +19,6 @@ function showStatus(message) {
   }, 5000);
 }
 
-// ---- PROGRESS BAR HELPERS ----
 function showProgress(type, percent, text) {
   if (type === "send") {
     document.getElementById("send-progress-group").style.display = "block";
@@ -92,7 +90,6 @@ document.getElementById("receive-btn").onclick = () => {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
-          // Reset progress at the start
           showProgress("receive", 0, `📥 Receiving: 0%`);
         } catch (err) {
           console.error("Invalid metadata:", err);
@@ -102,7 +99,6 @@ document.getElementById("receive-btn").onclick = () => {
 
       receivedBuffers.push(e.data);
 
-      // --- Progress bar logic for RECEIVING ---
       if (incomingFileInfo && incomingFileInfo.fileSize) {
         let receivedBytes = receivedBuffers.reduce((acc, curr) => acc + curr.byteLength, 0);
         let percent = ((receivedBytes / incomingFileInfo.fileSize) * 100).toFixed(1);
@@ -123,7 +119,6 @@ document.getElementById("receive-btn").onclick = () => {
       showStatus(`✅ File received: ${fileName}`);
       hideProgress("receive");
 
-      // Cleanup
       receivedBuffers = [];
       incomingFileInfo = null;
     };
@@ -166,7 +161,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with speed and stability
+// File sender with safe fast (not excessive) speed
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -179,9 +174,9 @@ async function sendFile(file) {
     // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    // Speed, but not too extreme (safe for most devices)
+    // Fast and safe
     const chunkSize = 256 * 1024; // 256 KB
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 4 MB
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 10; // 2.5 MB
 
     let offset = 0;
 
@@ -190,7 +185,7 @@ async function sendFile(file) {
         if (dataChannel.readyState !== "open") {
           throw new Error("Data channel closed prematurely in waitForBufferLow()");
         }
-        if (dataChannel.bufferedAmount < chunkSize * 16) {
+        if (dataChannel.bufferedAmount < chunkSize * 10) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
@@ -204,7 +199,6 @@ async function sendFile(file) {
       });
     }
 
-    // Reset progress at the start
     showProgress("send", 0, `📤 Sending: 0%`);
 
     while (offset < file.size) {
@@ -224,12 +218,10 @@ async function sendFile(file) {
       dataChannel.send(buffer);
       offset += chunkSize;
 
-      // Show sender progress
       let percent = ((offset / file.size) * 100).toFixed(1);
       showProgress("send", percent, `📤 Sending: ${percent}%`);
     }
 
-    // Wait for buffered data to be sent before closing
     while (dataChannel.bufferedAmount > 0) {
       if (dataChannel.readyState !== "open") {
         throw new Error("Data channel closed before all data sent (after loop).");
