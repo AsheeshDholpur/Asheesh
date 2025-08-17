@@ -167,7 +167,7 @@ socket.on("signal", async data => {
   }
 });
 
-// File sender with backpressure handling & readyState checks
+// File sender with faster chunking & buffer settings
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
     showStatus("❌ Data channel not open.");
@@ -180,12 +180,15 @@ async function sendFile(file) {
     // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
-    const chunkSize = 16 * 1024; // 16 KB chunks
+    // --------- SPEED OPTIMIZATIONS ----------
+    const chunkSize = 64 * 1024; // 64 KB chunks
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // Increase window
+
     let offset = 0;
 
     function waitForBufferLow() {
       return new Promise(resolve => {
-        if (dataChannel.bufferedAmount < chunkSize * 4) {
+        if (dataChannel.bufferedAmount < chunkSize * 16) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
