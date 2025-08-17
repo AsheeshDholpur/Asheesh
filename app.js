@@ -11,6 +11,7 @@ const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
+// Status helper (quick alerts/top notifications)
 const statusEl = document.getElementById("status");
 function showStatus(message) {
   statusEl.textContent = message;
@@ -19,6 +20,7 @@ function showStatus(message) {
   }, 5000);
 }
 
+// ---- PROGRESS BAR HELPERS ----
 function showProgress(type, percent, text) {
   if (type === "send") {
     document.getElementById("send-progress-group").style.display = "block";
@@ -38,17 +40,6 @@ function hideProgress(type) {
   }
 }
 
-// Helper for user-friendly disconnect/abort
-function showDisconnect(type) {
-  if (type === "send") {
-    showStatus("❌ Transfer interrupted or receiver disconnected.");
-    hideProgress("send");
-  } else if (type === "receive") {
-    showStatus("❌ Transfer interrupted or sender disconnected.");
-    hideProgress("receive");
-  }
-}
-
 // Sender
 document.getElementById("send-btn").onclick = async () => {
   const room = document.getElementById("send-room").value.trim();
@@ -64,13 +55,13 @@ document.getElementById("send-btn").onclick = async () => {
   };
 
   dataChannel.onclose = () => {
-    showStatus("✅ Transfer complete. Data channel closed.");
+    showStatus("🔒 Data channel closed");
     hideProgress("send");
   };
 
   dataChannel.onerror = err => {
     console.error("DataChannel error:", err);
-    showStatus("❌ Network error during transfer.");
+    showStatus("❌ Data channel error");
     hideProgress("send");
   };
 
@@ -101,6 +92,7 @@ document.getElementById("receive-btn").onclick = () => {
           incomingFileInfo = JSON.parse(e.data);
           receivedBuffers = [];
           document.getElementById("download-link").style.display = "none";
+          // Reset progress at the start
           showProgress("receive", 0, `📥 Receiving: 0%`);
         } catch (err) {
           console.error("Invalid metadata:", err);
@@ -110,6 +102,7 @@ document.getElementById("receive-btn").onclick = () => {
 
       receivedBuffers.push(e.data);
 
+      // --- Progress bar logic for RECEIVING ---
       if (incomingFileInfo && incomingFileInfo.fileSize) {
         let receivedBytes = receivedBuffers.reduce((acc, curr) => acc + curr.byteLength, 0);
         let percent = ((receivedBytes / incomingFileInfo.fileSize) * 100).toFixed(1);
@@ -118,30 +111,26 @@ document.getElementById("receive-btn").onclick = () => {
     };
 
     receiveChannel.onclose = () => {
-      // If file was fully received
-      if (receivedBuffers.length > 0 && incomingFileInfo && incomingFileInfo.fileSize) {
-        const received = new Blob(receivedBuffers);
-        const fileName = incomingFileInfo?.fileName || "received_file";
+      const received = new Blob(receivedBuffers);
+      const fileName = incomingFileInfo?.fileName || "received_file";
 
-        const downloadLink = document.getElementById("download-link");
-        downloadLink.href = URL.createObjectURL(received);
-        downloadLink.download = fileName;
-        downloadLink.textContent = `⬇️ Download ${fileName}`;
-        downloadLink.style.display = "block";
+      const downloadLink = document.getElementById("download-link");
+      downloadLink.href = URL.createObjectURL(received);
+      downloadLink.download = fileName;
+      downloadLink.textContent = `⬇️ Download ${fileName}`;
+      downloadLink.style.display = "block";
 
-        showStatus(`✅ File received! Transfer complete.`);
-      } else {
-        showStatus("❌ Transfer interrupted or sender disconnected.");
-      }
+      showStatus(`✅ File received: ${fileName}`);
       hideProgress("receive");
 
+      // Cleanup
       receivedBuffers = [];
       incomingFileInfo = null;
     };
 
     receiveChannel.onerror = err => {
       console.error("ReceiveChannel error:", err);
-      showStatus("❌ Network error during transfer.");
+      showStatus("❌ Receive channel error");
       hideProgress("receive");
     };
   };
@@ -173,40 +162,41 @@ socket.on("signal", async data => {
     }
   } catch (err) {
     console.error("❌ Signaling error:", err);
-    showStatus("❌ Connection error. Please try again.");
+    showStatus("❌ Signaling error: " + err.message);
   }
 });
 
-// File sender with user-friendly disconnects
+// File sender with speed and stability
 async function sendFile(file) {
   if (!dataChannel || dataChannel.readyState !== "open") {
-    showStatus("❌ Could not start transfer: connection not open.");
+    showStatus("❌ Data channel not open.");
+    console.warn("Data channel not open");
     hideProgress("send");
     return;
   }
 
   try {
+    // Send metadata first
     dataChannel.send(JSON.stringify({ fileName: file.name, fileSize: file.size }));
 
+    // Speed, but not too extreme (safe for most devices)
     const chunkSize = 256 * 1024; // 256 KB
-    dataChannel.bufferedAmountLowThreshold = chunkSize * 10; // 2.5 MB
+    dataChannel.bufferedAmountLowThreshold = chunkSize * 16; // 4 MB
 
     let offset = 0;
 
     function waitForBufferLow() {
       return new Promise(resolve => {
         if (dataChannel.readyState !== "open") {
-          showDisconnect("send");
-          throw new Error("User-friendly: Connection lost during transfer.");
+          throw new Error("Data channel closed prematurely in waitForBufferLow()");
         }
-        if (dataChannel.bufferedAmount < chunkSize * 10) {
+        if (dataChannel.bufferedAmount < chunkSize * 16) {
           resolve();
         } else {
           dataChannel.onbufferedamountlow = () => {
             dataChannel.onbufferedamountlow = null;
             if (dataChannel.readyState !== "open") {
-              showDisconnect("send");
-              throw new Error("User-friendly: Connection lost during transfer.");
+              throw new Error("Data channel closed prematurely in onbufferedamountlow()");
             }
             resolve();
           };
@@ -214,12 +204,12 @@ async function sendFile(file) {
       });
     }
 
+    // Reset progress at the start
     showProgress("send", 0, `📤 Sending: 0%`);
 
     while (offset < file.size) {
       if (dataChannel.readyState !== "open") {
-        showDisconnect("send");
-        throw new Error("User-friendly: Connection lost during transfer.");
+        throw new Error("Data channel closed prematurely (in send loop).");
       }
 
       const slice = file.slice(offset, offset + chunkSize);
@@ -228,31 +218,32 @@ async function sendFile(file) {
       await waitForBufferLow();
 
       if (dataChannel.readyState !== "open") {
-        showDisconnect("send");
-        throw new Error("User-friendly: Connection lost during transfer.");
+        throw new Error("Data channel closed prematurely (before send).");
       }
 
       dataChannel.send(buffer);
       offset += chunkSize;
 
+      // Show sender progress
       let percent = ((offset / file.size) * 100).toFixed(1);
       showProgress("send", percent, `📤 Sending: ${percent}%`);
     }
 
+    // Wait for buffered data to be sent before closing
     while (dataChannel.bufferedAmount > 0) {
       if (dataChannel.readyState !== "open") {
-        showDisconnect("send");
-        throw new Error("User-friendly: Connection lost during transfer.");
+        throw new Error("Data channel closed before all data sent (after loop).");
       }
       await new Promise(r => setTimeout(r, 100));
     }
 
-    showStatus("✅ File fully sent! Transfer complete.");
+    showStatus("✅ File fully sent. Closing channel...");
     hideProgress("send");
     dataChannel.close();
 
   } catch (err) {
-    // Already shown message above
+    console.error("❌ Send error:", err);
+    showStatus("❌ Failed to send file: " + err.message);
     hideProgress("send");
   } finally {
     document.getElementById("file-input").value = "";
