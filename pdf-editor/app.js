@@ -4,6 +4,12 @@ let canvas = document.getElementById("pdf-canvas");
 let ctx = canvas.getContext("2d");
 let isDrawing = false;
 let activeTool = null;
+let drawColor = document.getElementById("color-picker").value;
+
+// Color Picker
+document.getElementById("color-picker").addEventListener("input", (e) => {
+  drawColor = e.target.value;
+});
 
 // Load PDF
 document.getElementById("file-input").addEventListener("change", (e) => {
@@ -16,13 +22,18 @@ document.getElementById("file-input").addEventListener("change", (e) => {
         pdfDoc = pdf;
         pageNum = 1;
         renderPage(pageNum);
+
+        // Show navigation only if PDF has more than 1 page
+        if (pdfDoc.numPages > 1) {
+          document.getElementById("nav-controls").style.display = "flex";
+        }
       });
     };
     fileReader.readAsArrayBuffer(file);
   }
 });
 
-// Render page
+// Render Page
 function renderPage(num) {
   pdfDoc.getPage(num).then((page) => {
     let viewport = page.getViewport({ scale: 1.3 });
@@ -39,7 +50,7 @@ function renderPage(num) {
   });
 }
 
-// Page navigation
+// Navigation
 document.getElementById("prev-page").addEventListener("click", () => {
   if (pageNum <= 1) return;
   pageNum--;
@@ -57,10 +68,11 @@ document.getElementById("draw-btn").addEventListener("click", () => activeTool =
 document.getElementById("text-btn").addEventListener("click", () => activeTool = "text");
 document.getElementById("rect-btn").addEventListener("click", () => activeTool = "rect");
 document.getElementById("circle-btn").addEventListener("click", () => activeTool = "circle");
+document.getElementById("line-btn").addEventListener("click", () => activeTool = "line");
 
-// Mouse events
 let startX, startY;
 
+// Mouse Actions
 canvas.addEventListener("mousedown", (e) => {
   startX = e.offsetX;
   startY = e.offsetY;
@@ -75,7 +87,7 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("mousemove", (e) => {
   if (activeTool === "draw" && isDrawing) {
     ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.strokeStyle = "red";
+    ctx.strokeStyle = drawColor;
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -89,31 +101,57 @@ canvas.addEventListener("mouseup", (e) => {
     let text = prompt("Enter text:");
     if (text) {
       ctx.font = "20px Segoe UI";
-      ctx.fillStyle = "yellow";
+      ctx.fillStyle = drawColor;
       ctx.fillText(text, e.offsetX, e.offsetY);
     }
   }
   else if (activeTool === "rect") {
     let width = e.offsetX - startX;
     let height = e.offsetY - startY;
-    ctx.strokeStyle = "lime";
+    ctx.strokeStyle = drawColor;
     ctx.lineWidth = 2;
     ctx.strokeRect(startX, startY, width, height);
   }
   else if (activeTool === "circle") {
     let radius = Math.sqrt(Math.pow(e.offsetX - startX, 2) + Math.pow(e.offsetY - startY, 2));
-    ctx.strokeStyle = "cyan";
+    ctx.strokeStyle = drawColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(startX, startY, radius, 0, Math.PI * 2);
     ctx.stroke();
   }
+  else if (activeTool === "line") {
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+  }
 });
 
-// Save
-document.getElementById("save-btn").addEventListener("click", () => {
-  let link = document.createElement("a");
-  link.download = `edited-page-${pageNum}.png`;
-  link.href = canvas.toDataURL();
+// Save PDF
+document.getElementById("save-btn").addEventListener("click", async () => {
+  const { PDFDocument } = PDFLib;
+  const pdfBytes = await pdfDoc.getData(); // original file
+  const existingPdf = await PDFDocument.load(pdfBytes);
+
+  const page = existingPdf.getPages()[pageNum - 1];
+  const pngDataUrl = canvas.toDataURL("image/png");
+  const pngImage = await existingPdf.embedPng(pngDataUrl);
+
+  const { width, height } = page.getSize();
+  page.drawImage(pngImage, {
+    x: 0,
+    y: 0,
+    width: width,
+    height: height,
+  });
+
+  const newPdfBytes = await existingPdf.save();
+  const blob = new Blob([newPdfBytes], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "edited.pdf";
   link.click();
 });
