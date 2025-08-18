@@ -4,7 +4,7 @@ let canvas = document.getElementById("pdf-canvas");
 let ctx = canvas.getContext("2d");
 let isDrawing = false;
 
-// Load PDF
+// File Upload
 document.getElementById("file-input").addEventListener("change", (e) => {
   let file = e.target.files[0];
   if (file && file.type === "application/pdf") {
@@ -13,6 +13,7 @@ document.getElementById("file-input").addEventListener("change", (e) => {
       let typedArray = new Uint8Array(this.result);
       pdfjsLib.getDocument(typedArray).promise.then((pdf) => {
         pdfDoc = pdf;
+        pageNum = 1;
         renderPage(pageNum);
       });
     };
@@ -20,10 +21,10 @@ document.getElementById("file-input").addEventListener("change", (e) => {
   }
 });
 
-// Render page
+// Render PDF Page
 function renderPage(num) {
   pdfDoc.getPage(num).then((page) => {
-    let viewport = page.getViewport({ scale: 1.5 });
+    let viewport = page.getViewport({ scale: 1.3 });
     canvas.height = viewport.height;
     canvas.width = viewport.width;
 
@@ -32,10 +33,26 @@ function renderPage(num) {
       viewport: viewport,
     };
     page.render(renderContext);
+
+    // Update page info
+    document.getElementById("page-info").textContent = `Page ${num} / ${pdfDoc.numPages}`;
   });
 }
 
-// Enable drawing
+// Prev / Next Buttons
+document.getElementById("prev-page").addEventListener("click", () => {
+  if (pageNum <= 1) return;
+  pageNum--;
+  renderPage(pageNum);
+});
+
+document.getElementById("next-page").addEventListener("click", () => {
+  if (pageNum >= pdfDoc.numPages) return;
+  pageNum++;
+  renderPage(pageNum);
+});
+
+// Drawing Tool
 document.getElementById("draw-btn").addEventListener("click", () => {
   canvas.addEventListener("mousedown", startDrawing);
   canvas.addEventListener("mousemove", draw);
@@ -60,10 +77,10 @@ function stopDrawing() {
   isDrawing = false;
 }
 
-// Save edited canvas as image/PDF
+// Save Edited Canvas
 document.getElementById("save-btn").addEventListener("click", () => {
   let link = document.createElement("a");
-  link.download = "edited.pdf";
+  link.download = `edited-page-${pageNum}.png`;
   link.href = canvas.toDataURL();
   link.click();
 });
