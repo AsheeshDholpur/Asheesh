@@ -15,15 +15,27 @@
     <label for="file-input" class="btn upload-btn">📂 Upload PDF</label>
     <input type="file" id="file-input" accept="application/pdf" hidden>
 
-    <button id="prev-page" class="btn">⬅ Prev</button>
-    <span id="page-info">Page 1 / ?</span>
-    <button id="next-page" class="btn">Next ➡</button>
+    <div id="nav-controls" style="display:none;">
+      <button id="prev-page" class="btn">⬅ Prev</button>
+      <span id="page-info">Page 1 / ?</span>
+      <button id="next-page" class="btn">Next ➡</button>
+    </div>
+
+    <input type="color" id="color-picker" value="#ff0000" class="btn" title="Pick Color">
 
     <button id="draw-btn" class="btn">✏ Draw</button>
     <button id="text-btn" class="btn">📝 Text</button>
-    <button id="rect-btn" class="btn">▭ Rectangle</button>
-    <button id="circle-btn" class="btn">◯ Circle</button>
-    <button id="save-btn" class="btn save-btn">💾 Save</button>
+
+    <div class="dropdown">
+      <button class="btn">▭ Shapes ⬇</button>
+      <div class="dropdown-content">
+        <button id="rect-btn" class="btn">Rectangle</button>
+        <button id="circle-btn" class="btn">Circle</button>
+        <button id="line-btn" class="btn">Line</button>
+      </div>
+    </div>
+
+    <button id="save-btn" class="btn save-btn">💾 Save PDF</button>
   </div>
 
   <main id="pdf-container">
@@ -31,11 +43,11 @@
   </main>
 
   <footer class="footer glass">
-    <p>✨ Premium Glassy Dark PDF Editor ✨</p>
+    <p>✨ Premium PDF Editor ✨</p>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
-
