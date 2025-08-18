@@ -1,112 +1,29 @@
-/* Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Add dropdown styling */
+.dropdown {
+  position: relative;
+  display: inline-block;
 }
 
-body {
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Glassy Effect */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(255,255,255,0.1);
   backdrop-filter: blur(12px);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-
-/* Header */
-.app-header {
-  padding: 15px;
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-/* Toolbar */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  padding: 12px;
-  margin: 15px;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
   border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.25s ease;
-  background: rgba(255, 255, 255, 0.15);
-  color: #f8fafc;
+  padding: 6px;
+  min-width: 120px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  z-index: 10;
 }
 
-.btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
+.dropdown:hover .dropdown-content {
+  display: block;
 }
 
-.upload-btn {
-  background: #3b82f6cc;
-}
-
-.upload-btn:hover {
-  background: #2563ebcc;
-}
-
-.save-btn {
-  background: #22c55ecc;
-}
-
-.save-btn:hover {
-  background: #16a34acc;
-}
-
-#page-info {
-  align-self: center;
-  font-weight: bold;
-  padding: 0 10px;
-  color: #e2e8f0;
-}
-
-/* PDF Viewer */
-#pdf-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
-}
-
-#pdf-canvas {
-  border-radius: 12px;
-  background: #1e293b;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  max-width: 95vw;
-  height: auto;
-  cursor: crosshair;
-}
-
-/* Footer */
-.footer {
-  text-align: center;
-  padding: 10px;
-  font-size: 0.85rem;
-  margin: 10px;
-  color: #cbd5e1;
+.dropdown-content .btn {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
 }
