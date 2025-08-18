@@ -4,22 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Editor</title>
-  <link rel="stylesheet" href="/pdf-editor/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <header class="app-header">
+    <h1>📄 PDF Editor</h1>
+  </header>
+
   <div class="toolbar">
-    <input type="file" id="file-input" accept="application/pdf">
-    <button id="save-btn">Save PDF</button>
-    <button id="draw-btn">Draw</button>
-    <button id="text-btn">Add Text</button>
+    <label for="file-input" class="btn upload-btn">Upload PDF</label>
+    <input type="file" id="file-input" accept="application/pdf" hidden>
+
+    <button id="prev-page" class="btn">⬅ Prev</button>
+    <span id="page-info">Page 1 / ?</span>
+    <button id="next-page" class="btn">Next ➡</button>
+
+    <button id="draw-btn" class="btn">✏ Draw</button>
+    <button id="text-btn" class="btn">📝 Add Text</button>
+    <button id="save-btn" class="btn save-btn">💾 Save</button>
   </div>
 
-  <div id="pdf-container">
+  <main id="pdf-container">
     <canvas id="pdf-canvas"></canvas>
-  </div>
+  </main>
+
+  <footer class="footer">
+    <p>Made with ❤️ | Simple PDF Editor</p>
+  </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
-
