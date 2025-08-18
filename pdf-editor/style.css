@@ -6,23 +6,33 @@
 }
 
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #f9fafb;
-  color: #333;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #f8fafc;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassy Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
 /* Header */
 .app-header {
-  background: #2563eb;
-  color: white;
   padding: 15px;
   text-align: center;
   font-size: 1.5rem;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 /* Toolbar */
@@ -31,76 +41,72 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-  padding: 15px;
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  padding: 12px;
+  margin: 15px;
 }
 
 .btn {
-  padding: 8px 14px;
+  padding: 8px 16px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  background: #e5e7eb;
   font-size: 0.95rem;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.25s ease;
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
 }
 
 .btn:hover {
-  background: #d1d5db;
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
 }
 
 .upload-btn {
-  background: #3b82f6;
-  color: white;
+  background: #3b82f6cc;
 }
 
 .upload-btn:hover {
-  background: #2563eb;
+  background: #2563ebcc;
 }
 
 .save-btn {
-  background: #16a34a;
-  color: white;
+  background: #22c55ecc;
 }
 
 .save-btn:hover {
-  background: #15803d;
+  background: #16a34acc;
 }
 
-/* Page Info */
 #page-info {
   align-self: center;
   font-weight: bold;
-  color: #444;
+  padding: 0 10px;
+  color: #e2e8f0;
 }
 
-/* PDF Container */
+/* PDF Viewer */
 #pdf-container {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 20px;
-  background: #f3f4f6;
 }
 
 #pdf-canvas {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 90vw;
+  border-radius: 12px;
+  background: #1e293b;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-width: 95vw;
   height: auto;
+  cursor: crosshair;
 }
 
 /* Footer */
 .footer {
   text-align: center;
-  padding: 12px;
+  padding: 10px;
   font-size: 0.85rem;
-  background: #f9fafb;
-  border-top: 1px solid #ddd;
-  color: #555;
+  margin: 10px;
+  color: #cbd5e1;
 }
