@@ -1,1 +1,56 @@
-ECHO is on.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>P2P File Transfer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Ultra Premium Liquid Effect Background -->
+  <canvas id="liquid-bg"></canvas>
+  
+  <div class="container">
+    <h1><span class="glow">File Transfer</span></h1>
+
+    <div id="status"></div>
+
+    <div class="card">
+      <h2>
+        <img src="send.png" alt="Send File" class="icon-img">
+        Send File
+      </h2>
+      <input type="text" id="send-room" placeholder="Room ID to Send" />
+      <input type="file" id="file-input" />
+      <button id="send-btn" class="neon-btn">Send File</button>
+      <!-- Progress bar for sending -->
+      <div class="progress-group" id="send-progress-group" style="display:none;">
+        <progress id="send-progress" value="0" max="100"></progress>
+        <span id="send-progress-text"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>
+        <img src="receive.png" alt="Receive File" class="icon-img">
+        Receive File
+      </h2>
+      <input type="text" id="receive-room" placeholder="Room ID to Receive" />
+      <button id="receive-btn" class="neon-btn">Receive File</button>
+      <!-- Progress bar for receiving -->
+      <div class="progress-group" id="receive-progress-group" style="display:none;">
+        <progress id="receive-progress" value="0" max="100"></progress>
+        <span id="receive-progress-text"></span>
+      </div>
+      <a id="download-link" class="download-link" style="display:none;">
+        <img src="receive.png" alt="Download" style="vertical-align: middle; margin-right: 8px; width: 24px; height: 24px;">
+        Download File
+      </a>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="app.js"></script>
+  <script src="liquid-bg.js"></script>
+</body>
+</html>
