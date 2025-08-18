@@ -1,25 +1,106 @@
-body {
+/* Reset */
+* {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f9fafb;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  background: #2563eb;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Toolbar */
 .toolbar {
   display: flex;
-  gap: 10px;
-  padding: 10px;
-  background: #333;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 15px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #e5e7eb;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  background: #d1d5db;
+}
+
+.upload-btn {
+  background: #3b82f6;
   color: white;
 }
 
+.upload-btn:hover {
+  background: #2563eb;
+}
+
+.save-btn {
+  background: #16a34a;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #15803d;
+}
+
+/* Page Info */
+#page-info {
+  align-self: center;
+  font-weight: bold;
+  color: #444;
+}
+
+/* PDF Container */
 #pdf-container {
+  flex: 1;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   padding: 20px;
+  background: #f3f4f6;
 }
 
 #pdf-canvas {
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
+  border-radius: 10px;
   background: white;
-  cursor: crosshair;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-width: 90vw;
+  height: auto;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 12px;
+  font-size: 0.85rem;
+  background: #f9fafb;
+  border-top: 1px solid #ddd;
+  color: #555;
 }
