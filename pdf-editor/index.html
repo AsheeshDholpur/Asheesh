@@ -8,11 +8,11 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>📄 PDF Editor</h1>
+    <h1>PDF Editor ✨</h1>
   </header>
 
-  <div class="toolbar">
-    <label for="file-input" class="btn upload-btn">Upload PDF</label>
+  <div class="toolbar glass">
+    <label for="file-input" class="btn upload-btn">📂 Upload PDF</label>
     <input type="file" id="file-input" accept="application/pdf" hidden>
 
     <button id="prev-page" class="btn">⬅ Prev</button>
@@ -20,7 +20,9 @@
     <button id="next-page" class="btn">Next ➡</button>
 
     <button id="draw-btn" class="btn">✏ Draw</button>
-    <button id="text-btn" class="btn">📝 Add Text</button>
+    <button id="text-btn" class="btn">📝 Text</button>
+    <button id="rect-btn" class="btn">▭ Rectangle</button>
+    <button id="circle-btn" class="btn">◯ Circle</button>
     <button id="save-btn" class="btn save-btn">💾 Save</button>
   </div>
 
@@ -28,8 +30,8 @@
     <canvas id="pdf-canvas"></canvas>
   </main>
 
-  <footer class="footer">
-    <p>Made with ❤️ | Simple PDF Editor</p>
+  <footer class="footer glass">
+    <p>✨ Premium Glassy Dark PDF Editor ✨</p>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
