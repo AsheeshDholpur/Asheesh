@@ -1,29 +1,139 @@
-/* Add dropdown styling */
-.dropdown {
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Orbitron", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top left, #0a0a0f, #111827 70%);
+  color: #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header */
+.app-header {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #00ffe7;
+  text-shadow: 0 0 10px #00ffe7, 0 0 20px #00ffe7;
+  letter-spacing: 2px;
+  border-bottom: 2px solid rgba(0, 255, 231, 0.3);
+  background: linear-gradient(90deg, rgba(0,255,231,0.05), rgba(255,0,150,0.05));
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  margin: 18px;
+  border-radius: 16px;
+  background: rgba(20, 20, 40, 0.7);
+  border: 1px solid rgba(0,255,231,0.2);
+  box-shadow: 0 0 25px rgba(0, 255, 231, 0.15);
+  backdrop-filter: blur(14px);
+}
+
+.btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: linear-gradient(135deg, #1f2937, #374151);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
   position: relative;
-  display: inline-block;
+  overflow: hidden;
 }
 
-.dropdown-content {
-  display: none;
+.btn::before {
+  content: "";
   position: absolute;
-  top: 100%;
-  left: 0;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(12px);
-  border-radius: 8px;
-  padding: 6px;
-  min-width: 120px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-  z-index: 10;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(0,255,231,0.5), transparent);
+  transform: rotate(45deg);
+  transition: 0.5s;
 }
 
-.dropdown:hover .dropdown-content {
-  display: block;
+.btn:hover::before {
+  left: 100%;
 }
 
-.dropdown-content .btn {
-  display: block;
-  width: 100%;
-  margin: 4px 0;
+.btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 12px rgba(0,255,231,0.4);
+}
+
+/* Special buttons */
+.upload-btn {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+}
+
+.upload-btn:hover {
+  box-shadow: 0 0 18px #06b6d4;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.save-btn:hover {
+  box-shadow: 0 0 18px #22c55e;
+}
+
+/* Page Info */
+#page-info {
+  align-self: center;
+  font-weight: bold;
+  padding: 4px 12px;
+  color: #00ffe7;
+  background: rgba(0,255,231,0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(0,255,231,0.3);
+}
+
+/* PDF Viewer */
+#pdf-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 25px;
+}
+
+#pdf-canvas {
+  border-radius: 14px;
+  background: #0f172a;
+  box-shadow: 0 0 30px rgba(0, 255, 231, 0.2),
+              0 0 60px rgba(255, 0, 150, 0.2);
+  max-width: 94vw;
+  height: auto;
+  cursor: crosshair;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 14px;
+  font-size: 0.85rem;
+  color: #a5f3fc;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(0,255,231,0.2);
 }
