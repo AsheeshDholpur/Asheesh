@@ -17,24 +17,22 @@ body {
 
 /* Glassy Effect */
 .glass {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(14px);
-  border-radius: 14px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* Header */
 .app-header {
-  padding: 18px;
+  padding: 15px;
   text-align: center;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  letter-spacing: 1px;
-  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Toolbar */
@@ -42,27 +40,25 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: 12px;
+  padding: 12px;
   margin: 15px;
 }
 
 .btn {
-  padding: 9px 18px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.25s ease;
   background: rgba(255, 255, 255, 0.15);
   color: #f8fafc;
-  font-weight: 500;
 }
 
 .btn:hover {
   background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px) scale(1.05);
+  transform: scale(1.05);
 }
 
 .upload-btn {
@@ -81,16 +77,19 @@ body {
   background: #16a34acc;
 }
 
+/* Color Picker */
 .color-picker {
   padding: 6px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   outline: none;
-  height: 38px;
-  width: 55px;
+  height: 36px;
+  width: 50px;
+  background: transparent;
 }
 
+/* Shapes Dropdown */
 .shapes-dropdown {
   padding: 8px 12px;
   border-radius: 8px;
@@ -128,9 +127,9 @@ body {
 }
 
 #pdf-canvas {
-  border-radius: 14px;
+  border-radius: 12px;
   background: #1e293b;
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: 95vw;
   height: auto;
   cursor: crosshair;
@@ -139,10 +138,8 @@ body {
 /* Footer */
 .footer {
   text-align: center;
-  padding: 12px;
-  font-size: 0.9rem;
-  margin: 12px;
+  padding: 10px;
+  font-size: 0.85rem;
+  margin: 10px;
   color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
 }
