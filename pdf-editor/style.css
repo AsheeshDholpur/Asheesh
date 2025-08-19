@@ -15,9 +15,9 @@ body {
   overflow-x: hidden;
 }
 
-/* Glassy Effect */
+/* Glass Effect */
 .glass {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(12px);
   border-radius: 12px;
@@ -30,9 +30,6 @@ body {
   text-align: center;
   font-size: 1.5rem;
   font-weight: bold;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Toolbar */
@@ -56,61 +53,27 @@ body {
   color: #f8fafc;
 }
 
-.btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+.btn:hover, .btn.active {
+  background: rgba(255, 255, 255, 0.3);
   transform: scale(1.05);
 }
 
-.upload-btn {
-  background: #3b82f6cc;
-}
-
-.upload-btn:hover {
-  background: #2563ebcc;
-}
-
-.save-btn {
-  background: #22c55ecc;
-}
-
-.save-btn:hover {
-  background: #16a34acc;
-}
+.upload-btn { background: #3b82f6cc; }
+.upload-btn:hover { background: #2563ebcc; }
+.save-btn { background: #22c55ecc; }
+.save-btn:hover { background: #16a34acc; }
 
 /* Color Picker */
-.color-picker {
-  padding: 6px;
+#color-picker {
+  height: 36px;
+  width: 50px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   outline: none;
-  height: 36px;
-  width: 50px;
-  background: transparent;
 }
 
-/* Shapes Dropdown */
-.shapes-dropdown {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.15);
-  color: #f1f5f9;
-  font-size: 0.9rem;
-}
-
-.shapes-dropdown:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Page Info & Navigation */
-.page-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+/* Page Info */
 #page-info {
   font-weight: bold;
   padding: 0 10px;
@@ -124,15 +87,39 @@ body {
   justify-content: center;
   align-items: flex-start;
   padding: 20px;
+  position: relative;
 }
 
-#pdf-canvas {
+.canvas-wrapper {
+  position: relative;
+}
+
+#pdf-canvas, #overlay-canvas {
   border-radius: 12px;
   background: #1e293b;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: 95vw;
   height: auto;
+}
+
+#overlay-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
   cursor: crosshair;
+}
+
+/* Floating Text Input */
+#text-input {
+  position: absolute;
+  border: none;
+  padding: 5px 8px;
+  font-size: 18px;
+  border-radius: 6px;
+  outline: none;
+  z-index: 10;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
 }
 
 /* Footer */
