@@ -1,5 +1,7 @@
 let pdfDoc = null;
+let originalPdfBytes = null; // store uploaded file
 let pageNum = 1;
+
 let pdfCanvas = document.getElementById("pdf-canvas");
 let overlayCanvas = document.getElementById("overlay-canvas");
 let pdfCtx = pdfCanvas.getContext("2d");
@@ -20,14 +22,14 @@ document.getElementById("color-picker").addEventListener("input", (e) => {
   drawColor = e.target.value;
 });
 
-// Load PDF
+// Upload & load PDF
 document.getElementById("file-input").addEventListener("change", (e) => {
   let file = e.target.files[0];
   if (file && file.type === "application/pdf") {
     let fileReader = new FileReader();
     fileReader.onload = function () {
-      let typedArray = new Uint8Array(this.result);
-      pdfjsLib.getDocument(typedArray).promise.then((pdf) => {
+      originalPdfBytes = new Uint8Array(this.result); // save file
+      pdfjsLib.getDocument(originalPdfBytes).promise.then((pdf) => {
         pdfDoc = pdf;
         pageNum = 1;
         renderPage(pageNum);
@@ -50,20 +52,17 @@ function renderPage(num) {
     overlayCanvas.height = viewport.height;
     overlayCanvas.width = viewport.width;
 
-    let renderContext = {
-      canvasContext: pdfCtx,
-      viewport: viewport,
-    };
+    let renderContext = { canvasContext: pdfCtx, viewport: viewport };
     page.render(renderContext);
 
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-    // redraw annotations
     if (annotations[num]) {
       annotations[num].forEach(drawAnnotation);
     }
 
-    document.getElementById("page-info").textContent = `Page ${num} / ${pdfDoc.numPages}`;
+    document.getElementById("page-info").textContent =
+      `Page ${num} / ${pdfDoc.numPages}`;
   });
 }
 
@@ -103,6 +102,7 @@ overlayCanvas.addEventListener("mousedown", (e) => {
     overlayCtx.beginPath();
     overlayCtx.moveTo(startX, startY);
   } else if (activeTool === "text") {
+    let rect = overlayCanvas.getBoundingClientRect();
     textInput.style.left = e.pageX + "px";
     textInput.style.top = e.pageY + "px";
     textInput.style.display = "block";
@@ -185,7 +185,7 @@ function drawAnnotation(ann) {
     case "circle": overlayCtx.beginPath(); overlayCtx.arc(ann.x, ann.y, ann.r, 0, Math.PI*2); overlayCtx.stroke(); break;
     case "line": overlayCtx.beginPath(); overlayCtx.moveTo(ann.x1, ann.y1); overlayCtx.lineTo(ann.x2, ann.y2); overlayCtx.stroke(); break;
     case "text": overlayCtx.font = "20px Segoe UI"; overlayCtx.fillText(ann.text, ann.x, ann.y); break;
-    case "path": 
+    case "path":
       let img = new Image();
       img.src = ann.data;
       img.onload = () => overlayCtx.drawImage(img, 0, 0);
@@ -211,8 +211,9 @@ document.getElementById("clear-btn").addEventListener("click", () => {
 // Save PDF
 document.getElementById("save-btn").addEventListener("click", async () => {
   const { PDFDocument, rgb } = PDFLib;
-  const pdfBytes = await pdfDoc.getData();
-  const existingPdf = await PDFDocument.load(pdfBytes);
+  if (!originalPdfBytes) return alert("No PDF loaded!");
+
+  const existingPdf = await PDFDocument.load(originalPdfBytes);
 
   for (let i = 1; i <= existingPdf.getPages().length; i++) {
     const page = existingPdf.getPages()[i - 1];
@@ -249,5 +250,9 @@ document.getElementById("save-btn").addEventListener("click", async () => {
 // Convert HEX → rgb()
 function rgbHex(hex) {
   let bigint = parseInt(hex.slice(1), 16);
-  return rgb(((bigint >> 16) & 255)/255, ((bigint >> 8) & 255)/255, (bigint & 255)/255);
+  return PDFLib.rgb(
+    ((bigint >> 16) & 255) / 255,
+    ((bigint >> 8) & 255) / 255,
+    (bigint & 255) / 255
+  );
 }
