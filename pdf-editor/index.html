@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>✨ PDF Editor Pro ✨</h1>
+    <h1>PDF Editor ✨</h1>
   </header>
 
   <div class="toolbar glass">
@@ -35,25 +35,24 @@
       </div>
     </div>
 
-    <button id="undo-btn" class="btn">↩ Undo</button>
-    <button id="clear-btn" class="btn">🗑 Clear</button>
     <button id="save-btn" class="btn save-btn">💾 Save PDF</button>
   </div>
 
   <main id="pdf-container">
-    <div class="canvas-wrapper">
-      <canvas id="pdf-canvas"></canvas>
-      <canvas id="overlay-canvas"></canvas>
-    </div>
-    <input type="text" id="text-input" placeholder="Type here..." style="display:none;">
+    <canvas id="pdf-canvas"></canvas>
   </main>
 
   <footer class="footer glass">
     <p>✨ Premium PDF Editor ✨</p>
   </footer>
 
+  <!-- PDF.js (core + worker) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
+
+  <!-- PDF-lib -->
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+
   <script src="app.js"></script>
 </body>
 </html>
