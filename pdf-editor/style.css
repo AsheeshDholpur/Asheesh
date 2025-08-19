@@ -15,9 +15,9 @@ body {
   overflow-x: hidden;
 }
 
-/* Glass Effect */
+/* Glassy Effect */
 .glass {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(12px);
   border-radius: 12px;
@@ -30,6 +30,9 @@ body {
   text-align: center;
   font-size: 1.5rem;
   font-weight: bold;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Toolbar */
@@ -53,24 +56,25 @@ body {
   color: #f8fafc;
 }
 
-.btn:hover, .btn.active {
-  background: rgba(255, 255, 255, 0.3);
+.btn:hover {
+  background: rgba(255, 255, 255, 0.25);
   transform: scale(1.05);
 }
 
-.upload-btn { background: #3b82f6cc; }
-.upload-btn:hover { background: #2563ebcc; }
-.save-btn { background: #22c55ecc; }
-.save-btn:hover { background: #16a34acc; }
+.upload-btn {
+  background: #3b82f6cc;
+}
 
-/* Color Picker */
-#color-picker {
-  height: 36px;
-  width: 50px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  outline: none;
+.upload-btn:hover {
+  background: #2563ebcc;
+}
+
+.save-btn {
+  background: #22c55ecc;
+}
+
+.save-btn:hover {
+  background: #16a34acc;
 }
 
 /* Page Info */
@@ -87,39 +91,15 @@ body {
   justify-content: center;
   align-items: flex-start;
   padding: 20px;
-  position: relative;
 }
 
-.canvas-wrapper {
-  position: relative;
-}
-
-#pdf-canvas, #overlay-canvas {
+#pdf-canvas {
   border-radius: 12px;
   background: #1e293b;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: 95vw;
   height: auto;
-}
-
-#overlay-canvas {
-  position: absolute;
-  left: 0;
-  top: 0;
   cursor: crosshair;
-}
-
-/* Floating Text Input */
-#text-input {
-  position: absolute;
-  border: none;
-  padding: 5px 8px;
-  font-size: 18px;
-  border-radius: 6px;
-  outline: none;
-  z-index: 10;
-  color: #fff;
-  background: rgba(0,0,0,0.6);
 }
 
 /* Footer */
