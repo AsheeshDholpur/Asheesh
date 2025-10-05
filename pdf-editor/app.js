@@ -6,41 +6,77 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const state = {
   pdfDoc: null,
   pageNum: 1,
-  canvas: document.getElementById("pdf-canvas"),
-  ctx: document.getElementById("pdf-canvas").getContext("2d"),
+  canvas: null,
+  ctx: null,
   isDrawing: false,
   activeTool: null,
-  drawColor: document.getElementById("color-picker").value,
+  drawColor: "#000000",
   startX: 0,
   startY: 0
 };
 
+// ===== Initialize Canvas =====
+function initializeCanvas() {
+  state.canvas = document.getElementById("pdf-canvas");
+  if (!state.canvas) {
+    console.error("Canvas element not found!");
+    return false;
+  }
+  state.ctx = state.canvas.getContext("2d");
+  return true;
+}
+
 // ===== Event Listeners Setup =====
 function initializeEventListeners() {
+  // Initialize canvas first
+  if (!initializeCanvas()) {
+    console.error("Failed to initialize canvas");
+    return;
+  }
+
   // Color picker
-  document.getElementById("color-picker").addEventListener("input", handleColorChange);
+  const colorPicker = document.getElementById("color-picker");
+  if (colorPicker) {
+    state.drawColor = colorPicker.value;
+    colorPicker.addEventListener("input", handleColorChange);
+  }
   
   // File input
-  document.getElementById("file-input").addEventListener("change", handleFileLoad);
+  const fileInput = document.getElementById("file-input");
+  if (fileInput) {
+    fileInput.addEventListener("change", handleFileLoad);
+  }
   
   // Navigation
-  document.getElementById("prev-page").addEventListener("click", () => navigatePage(-1));
-  document.getElementById("next-page").addEventListener("click", () => navigatePage(1));
+  const prevBtn = document.getElementById("prev-page");
+  const nextBtn = document.getElementById("next-page");
+  if (prevBtn) prevBtn.addEventListener("click", () => navigatePage(-1));
+  if (nextBtn) nextBtn.addEventListener("click", () => navigatePage(1));
   
   // Tools
-  document.getElementById("draw-btn").addEventListener("click", () => setActiveTool("draw"));
-  document.getElementById("text-btn").addEventListener("click", () => setActiveTool("text"));
-  document.getElementById("rect-btn").addEventListener("click", () => setActiveTool("rect"));
-  document.getElementById("circle-btn").addEventListener("click", () => setActiveTool("circle"));
-  document.getElementById("line-btn").addEventListener("click", () => setActiveTool("line"));
+  const toolButtons = [
+    { id: "draw-btn", tool: "draw" },
+    { id: "text-btn", tool: "text" },
+    { id: "rect-btn", tool: "rect" },
+    { id: "circle-btn", tool: "circle" },
+    { id: "line-btn", tool: "line" }
+  ];
+  
+  toolButtons.forEach(({ id, tool }) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => setActiveTool(tool));
+  });
   
   // Canvas interactions
-  state.canvas.addEventListener("mousedown", handleMouseDown);
-  state.canvas.addEventListener("mousemove", handleMouseMove);
-  state.canvas.addEventListener("mouseup", handleMouseUp);
+  if (state.canvas) {
+    state.canvas.addEventListener("mousedown", handleMouseDown);
+    state.canvas.addEventListener("mousemove", handleMouseMove);
+    state.canvas.addEventListener("mouseup", handleMouseUp);
+  }
   
   // Save functionality
-  document.getElementById("save-btn").addEventListener("click", savePDF);
+  const saveBtn = document.getElementById("save-btn");
+  if (saveBtn) saveBtn.addEventListener("click", savePDF);
 }
 
 // ===== Event Handlers =====
@@ -50,22 +86,54 @@ function handleColorChange(e) {
 
 function handleFileLoad(e) {
   const file = e.target.files[0];
-  if (!file || file.type !== "application/pdf") return;
+  if (!file) {
+    console.log("No file selected");
+    return;
+  }
+  
+  if (file.type !== "application/pdf") {
+    alert("Please select a PDF file");
+    return;
+  }
+  
+  console.log("Loading PDF file:", file.name);
   
   const fileReader = new FileReader();
   fileReader.onload = function() {
-    const typedArray = new Uint8Array(this.result);
-    pdfjsLib.getDocument({ data: typedArray }).promise.then(pdf => {
-      state.pdfDoc = pdf;
-      state.pageNum = 1;
-      renderPage(state.pageNum);
+    try {
+      const typedArray = new Uint8Array(this.result);
+      console.log("File loaded, size:", typedArray.length);
       
-      // Show navigation for multi-page PDFs
-      if (pdf.numPages > 1) {
-        document.getElementById("nav-controls").style.display = "flex";
-      }
-    });
+      pdfjsLib.getDocument({ 
+        data: typedArray,
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/',
+        cMapPacked: true
+      }).promise.then(pdf => {
+        console.log("PDF loaded successfully, pages:", pdf.numPages);
+        state.pdfDoc = pdf;
+        state.pageNum = 1;
+        renderPage(state.pageNum);
+        
+        // Show navigation for multi-page PDFs
+        const navControls = document.getElementById("nav-controls");
+        if (pdf.numPages > 1 && navControls) {
+          navControls.style.display = "flex";
+        }
+      }).catch(error => {
+        console.error("Error loading PDF:", error);
+        alert("Failed to load PDF. Please make sure it's a valid PDF file.");
+      });
+    } catch (error) {
+      console.error("Error reading file:", error);
+      alert("Failed to read the file. Please try again.");
+    }
   };
+  
+  fileReader.onerror = function() {
+    console.error("FileReader error");
+    alert("Failed to read the file. Please try again.");
+  };
+  
   fileReader.readAsArrayBuffer(file);
 }
 
@@ -161,9 +229,22 @@ function drawLine(endX, endY) {
 
 // ===== PDF Rendering =====
 function renderPage(pageNumber) {
+  if (!state.pdfDoc) {
+    console.error("No PDF document loaded");
+    return;
+  }
+  
+  console.log("Rendering page:", pageNumber);
+  
   state.pdfDoc.getPage(pageNumber).then(page => {
+    console.log("Page loaded, rendering...");
+    
     const viewport = page.getViewport({ scale: 1.3 });
     
+    // Clear canvas first
+    state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+    
+    // Set canvas dimensions
     state.canvas.height = viewport.height;
     state.canvas.width = viewport.width;
     
@@ -172,9 +253,20 @@ function renderPage(pageNumber) {
       viewport: viewport
     };
     
-    page.render(renderContext);
-    document.getElementById("page-info").textContent = 
-      `Page ${pageNumber} / ${state.pdfDoc.numPages}`;
+    // Render the page
+    page.render(renderContext).promise.then(() => {
+      console.log("Page rendered successfully");
+      const pageInfo = document.getElementById("page-info");
+      if (pageInfo) {
+        pageInfo.textContent = `Page ${pageNumber} / ${state.pdfDoc.numPages}`;
+      }
+    }).catch(error => {
+      console.error("Error rendering page:", error);
+      alert("Failed to render PDF page. Please try again.");
+    });
+  }).catch(error => {
+    console.error("Error getting page:", error);
+    alert("Failed to load PDF page. Please try again.");
   });
 }
 
