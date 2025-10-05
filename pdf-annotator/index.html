@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minimal PDF Annotator</title>
+    <title>PDF Annotator</title>
     <link rel="stylesheet" href="styles.css" />
     <!-- PDF.js -->
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js" integrity="sha512-C9Xk9mXKzE7lVfQ8P7WlZr5wq6m6Jd3sG0xje/3U1jWJ6C8Qb0kA1a/8rjv1cQq4Jf1xqNqgS7n8K8p0Eo4qGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -12,7 +12,22 @@
     <script defer src="script.js"></script>
 </head>
 <body>
-    <header class="toolbar">
+    <!-- Site header/branding -->
+    <header class="site-header" role="banner">
+        <div class="brand">
+            <a href="../index.html" class="brand-link" aria-label="Go to home">Asheesh Tools</a>
+            <span class="brand-sep">/</span>
+            <strong class="brand-product">PDF Annotator</strong>
+        </div>
+        <nav class="site-nav" aria-label="Global navigation">
+            <button id="open-help" class="btn" type="button" aria-haspopup="dialog" aria-controls="help-modal">Help</button>
+            <a class="btn" href="../pdf-editor/index.html">PDF Editor</a>
+            <a class="btn" href="../file-transfer/index.html">File Transfer</a>
+        </nav>
+    </header>
+
+    <!-- Tool toolbar -->
+    <div class="toolbar" role="toolbar" aria-label="Annotation toolbar">
         <div class="left">
             <label class="btn">
                 <input id="file-input" type="file" accept="application/pdf" hidden />
@@ -27,7 +42,7 @@
             <button id="mode-text" class="btn" disabled>Text</button>
             <button id="download" class="btn primary" disabled>Download</button>
         </div>
-    </header>
+    </div>
 
     <main class="viewer">
         <div id="canvas-wrap">
@@ -39,7 +54,70 @@
     <!-- Text input overlay -->
     <input id="text-input" class="text-input" type="text" placeholder="Type and press Enter" />
 
+    <!-- Optional: Status/Error/Loading overlays -->
+    <div id="status-message" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#232634;color:#fff;padding:10px 20px;border-radius:8px;z-index:1000;font-size:1rem;"></div>
+    <div id="loading-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(20,22,30,0.7);z-index:2000;align-items:center;justify-content:center;">
+        <div style="color:#fff;font-size:1.2rem;">Loading...</div>
+    </div>
+
+    <!-- Help modal -->
+    <dialog id="help-modal" class="modal" aria-labelledby="help-title">
+        <form method="dialog" class="modal-card">
+            <header class="modal-header">
+                <h2 id="help-title">How to use PDF Annotator</h2>
+                <button id="close-help" class="btn" value="close" aria-label="Close help">Close</button>
+            </header>
+            <section class="modal-body">
+                <ul>
+                    <li>Click <strong>Upload PDF</strong> to open a document.</li>
+                    <li>Use <strong>Prev</strong> / <strong>Next</strong> to change pages.</li>
+                    <li>Click <strong>Draw</strong> to draw rectangles. Hold <strong>Shift</strong> to draw a straight line.</li>
+                    <li>Click <strong>Text</strong>, then click on the page to place text. Press <strong>Enter</strong> to commit.</li>
+                    <li>Click <strong>Download</strong> to export an annotated PDF.</li>
+                </ul>
+            </section>
+            <footer class="modal-footer">
+                <button class="btn primary" value="close">Got it</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <span>© <span id="year"></span> Asheesh. All rights reserved.</span>
+            <span class="footer-spacer">•</span>
+            <a href="../index.html" class="footer-link">Home</a>
+        </div>
+    </footer>
+
+    <script>
+    // Show status message
+    function showStatus(msg, timeout=3000) {
+        const el = document.getElementById('status-message');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, timeout);
+    }
+    // Show/hide loading overlay
+    function showLoading(show) {
+        const el = document.getElementById('loading-overlay');
+        el.style.display = show ? 'flex' : 'none';
+    }
+    // Modal toggles and footer year
+    (function(){
+        const help = document.getElementById('help-modal');
+        const open = document.getElementById('open-help');
+        const close = document.getElementById('close-help');
+        const year = document.getElementById('year');
+        if (year) year.textContent = new Date().getFullYear();
+        if (open && help) open.addEventListener('click', () => help.showModal());
+        if (close && help) close.addEventListener('click', () => help.close());
+        help?.addEventListener('click', (e) => {
+            const rect = help.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) help.close();
+        });
+    })();
+    </script>
 </body>
 </html>
-
-
