@@ -3,48 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Editor</title>
+  <title>PDF Editor Pro</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <header class="app-header">
-    <h1>PDF Editor ✨</h1>
-  </header>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-file-pdf"></i>
+          <h1>PDF Editor <span class="pro-badge">Pro</span></h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" title="Settings">
+            <i class="fas fa-cog"></i>
+          </button>
+          <button class="btn-icon" title="Help">
+            <i class="fas fa-question-circle"></i>
+          </button>
+        </div>
+      </div>
+    </header>
 
-  <div class="toolbar glass">
-    <label for="file-input" class="btn upload-btn">📂 Upload PDF</label>
-    <input type="file" id="file-input" accept="application/pdf" hidden>
+    <div class="toolbar-container">
+      <div class="toolbar">
+        <div class="toolbar-section">
+          <label for="file-input" class="btn btn-primary upload-btn">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>Upload PDF</span>
+          </label>
+          <input type="file" id="file-input" accept="application/pdf" hidden>
+        </div>
 
-    <div id="nav-controls" style="display:none;">
-      <button id="prev-page" class="btn">⬅ Prev</button>
-      <span id="page-info">Page 1 / ?</span>
-      <button id="next-page" class="btn">Next ➡</button>
-    </div>
+        <div id="nav-controls" class="toolbar-section" style="display:none;">
+          <button id="prev-page" class="btn btn-secondary">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div class="page-info-container">
+            <span id="page-info" class="page-info">Page 1 / ?</span>
+          </div>
+          <button id="next-page" class="btn btn-secondary">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
 
-    <input type="color" id="color-picker" value="#ff0000" class="btn" title="Pick Color">
+        <div class="toolbar-divider"></div>
 
-    <button id="draw-btn" class="btn">✏ Draw</button>
-    <button id="text-btn" class="btn">📝 Text</button>
+        <div class="toolbar-section">
+          <div class="color-picker-container">
+            <input type="color" id="color-picker" value="#ff4757" class="color-picker" title="Pick Color">
+            <label for="color-picker" class="color-picker-label">
+              <i class="fas fa-palette"></i>
+            </label>
+          </div>
+        </div>
 
-    <div class="dropdown">
-      <button class="btn">▭ Shapes ⬇</button>
-      <div class="dropdown-content">
-        <button id="rect-btn" class="btn">Rectangle</button>
-        <button id="circle-btn" class="btn">Circle</button>
-        <button id="line-btn" class="btn">Line</button>
+        <div class="toolbar-section">
+          <button id="draw-btn" class="btn btn-tool" data-tooltip="Draw Mode">
+            <i class="fas fa-pencil-alt"></i>
+            <span>Draw</span>
+          </button>
+          <button id="text-btn" class="btn btn-tool" data-tooltip="Text Mode">
+            <i class="fas fa-font"></i>
+            <span>Text</span>
+          </button>
+        </div>
+
+        <div class="toolbar-section">
+          <div class="dropdown">
+            <button class="btn btn-tool dropdown-toggle">
+              <i class="fas fa-shapes"></i>
+              <span>Shapes</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-content">
+              <button id="rect-btn" class="dropdown-item">
+                <i class="fas fa-square"></i>
+                <span>Rectangle</span>
+              </button>
+              <button id="circle-btn" class="dropdown-item">
+                <i class="fas fa-circle"></i>
+                <span>Circle</span>
+              </button>
+              <button id="line-btn" class="dropdown-item">
+                <i class="fas fa-minus"></i>
+                <span>Line</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-section">
+          <button id="save-btn" class="btn btn-success">
+            <i class="fas fa-download"></i>
+            <span>Save PDF</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <button id="save-btn" class="btn save-btn">💾 Save PDF</button>
+    <main class="main-content">
+      <div class="canvas-container">
+        <div class="canvas-wrapper">
+          <canvas id="pdf-canvas"></canvas>
+          <div class="canvas-overlay">
+            <div class="loading-spinner" id="loading-spinner">
+              <div class="spinner"></div>
+              <p>Loading PDF...</p>
+            </div>
+            <div class="empty-state" id="empty-state">
+              <i class="fas fa-file-pdf"></i>
+              <h3>No PDF Loaded</h3>
+              <p>Upload a PDF file to start editing</p>
+              <label for="file-input" class="btn btn-primary">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Choose File
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <p>&copy; 2024 PDF Editor Pro. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Privacy</a>
+          <a href="#" class="footer-link">Terms</a>
+          <a href="#" class="footer-link">Support</a>
+        </div>
+      </div>
+    </footer>
   </div>
 
-  <main id="pdf-container">
-    <canvas id="pdf-canvas"></canvas>
-  </main>
-
-  <footer class="footer glass">
-    <p>✨ Premium PDF Editor ✨</p>
-  </footer>
+  <!-- Floating Action Button for Quick Actions -->
+  <div class="fab-container">
+    <button class="fab" id="fab-main">
+      <i class="fas fa-plus"></i>
+    </button>
+    <div class="fab-menu" id="fab-menu">
+      <button class="fab-item" data-tooltip="Undo">
+        <i class="fas fa-undo"></i>
+      </button>
+      <button class="fab-item" data-tooltip="Redo">
+        <i class="fas fa-redo"></i>
+      </button>
+      <button class="fab-item" data-tooltip="Clear All">
+        <i class="fas fa-eraser"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- PDF.js (core + worker) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
