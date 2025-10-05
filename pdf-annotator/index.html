@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minimal PDF Annotator</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- PDF.js -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js" integrity="sha512-C9Xk9mXKzE7lVfQ8P7WlZr5wq6m6Jd3sG0xje/3U1jWJ6C8Qb0kA1a/8rjv1cQq4Jf1xqNqgS7n8K8p0Eo4qGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- pdf-lib -->
+    <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <header class="toolbar">
+        <div class="left">
+            <label class="btn">
+                <input id="file-input" type="file" accept="application/pdf" hidden />
+                Upload PDF
+            </label>
+            <button id="prev-page" class="btn" disabled>Prev</button>
+            <span id="page-info">- / -</span>
+            <button id="next-page" class="btn" disabled>Next</button>
+        </div>
+        <div class="right">
+            <button id="mode-draw" class="btn" disabled>Draw</button>
+            <button id="mode-text" class="btn" disabled>Text</button>
+            <button id="download" class="btn primary" disabled>Download</button>
+        </div>
+    </header>
+
+    <main class="viewer">
+        <div id="canvas-wrap">
+            <canvas id="pdf-canvas"></canvas>
+            <canvas id="overlay-canvas"></canvas>
+        </div>
+    </main>
+
+    <!-- Text input overlay -->
+    <input id="text-input" class="text-input" type="text" placeholder="Type and press Enter" />
+
+</body>
+</html>
+
+

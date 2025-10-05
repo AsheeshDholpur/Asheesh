@@ -1,0 +1,92 @@
+/* Layout */
+html, body {
+    height: 100%;
+    margin: 0;
+    background: #0f1115;
+    color: #e6e6e6;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.toolbar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #12151c;
+    border-bottom: 1px solid #232634;
+    z-index: 10;
+}
+
+.toolbar .left, .toolbar .right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn {
+    appearance: none;
+    border: 1px solid #2a2f3e;
+    background: #1a1f2b;
+    color: #e6e6e6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:hover { background: #202638; border-color: #36415a; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.primary { background: #2a5bd7; border-color: #2a5bd7; }
+.btn.primary:hover { background: #2d66f0; border-color: #2d66f0; }
+
+#page-info { opacity: 0.8; font-variant-numeric: tabular-nums; }
+
+.viewer {
+    position: relative;
+    height: calc(100% - 58px);
+    display: grid;
+    place-items: center;
+    overflow: auto;
+}
+
+#canvas-wrap {
+    position: relative;
+    background: #0a0c10;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+#pdf-canvas, #overlay-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#pdf-canvas {
+    position: relative; /* base canvas participates in layout */
+    display: block;
+    background: #fff;
+}
+
+/* Text input overlay for placing text */
+.text-input {
+    position: fixed;
+    top: -1000px;
+    left: -1000px;
+    width: 240px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #2a2f3e;
+    background: #0f1115;
+    color: #e6e6e6;
+    outline: none;
+    z-index: 20;
+}
+
+/* Cursor states */
+.mode-draw { cursor: crosshair; }
+.mode-text { cursor: text; }
+
+
