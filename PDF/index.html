@@ -199,71 +199,63 @@
   }
 
   // Export PDF with file size between 250–300 KB
-  async function exportPDF() {
-    if (images.length === 0) return alert("Add at least one image.");
-    if (images.length > 3) return alert("Only 3 images allowed.");
+ async function exportPDF() {
+  if (images.length === 0) return;
 
-    const name = prompt("Enter document name:", "MyDocument");
-    if (!name) return;
+  const name = prompt("Enter document name:", "MyDocument") || "MyDocument";
+  let quality = 0.9;
+  let scale = 1.0;
+  let pdfBytes, blob;
 
-    let quality = 0.85;
-    let scale = 1.0;
-    let blob, pdfBytes;
-    let attempt = 0;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const pdfDoc = await PDFLib.PDFDocument.create();
 
-    while (attempt++ < 8) {
-      const pdfDoc = await PDFLib.PDFDocument.create();
+    for (const canvas of images) {
+      // Create scaled copy of canvas
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width * scale;
+      tempCanvas.height = canvas.height * scale;
+      const ctx = tempCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
 
-      for (const canvas of images) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width * scale;
-        tempCanvas.height = canvas.height * scale;
-        const ctx = tempCanvas.getContext('2d');
-        ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      // Convert to JPEG with current quality
+      const imgData = tempCanvas.toDataURL('image/jpeg', quality);
+      const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+      const jpgImage = await pdfDoc.embedJpg(imgBytes);
 
-        const imgData = tempCanvas.toDataURL('image/jpeg', quality);
-        const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
-        const jpgImage = await pdfDoc.embedJpg(imgBytes);
-
-        const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
-        page.drawImage(jpgImage, {
-          x: 0,
-          y: 0,
-          width: jpgImage.width,
-          height: jpgImage.height
-        });
-      }
-
-      pdfBytes = await pdfDoc.save();
-      blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const sizeKB = blob.size / 1024;
-
-      if (sizeKB >= 250 && sizeKB <= 300) break;
-      if (sizeKB > 300) {
-        quality -= 0.05;
-        scale -= 0.05;
-      } else if (sizeKB < 250) {
-        quality = Math.min(quality + 0.05, 0.95);
-        scale = Math.min(scale + 0.05, 1);
-      }
+      const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
+      page.drawImage(jpgImage, {
+        x: 0,
+        y: 0,
+        width: jpgImage.width,
+        height: jpgImage.height
+      });
     }
 
-    const finalSize = (blob.size / 1024).toFixed(1);
-    if (blob.size > 300 * 1024 || blob.size < 250 * 1024) {
-      alert(`⚠️ PDF outside size limit. Final size: ${finalSize} KB`);
-      return;
-    }
+    pdfBytes = await pdfDoc.save();
+    blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${name}.pdf`;
-    link.click();
+    // If under 300 KB, break early
+    if (blob.size <= 300 * 1024) break;
+
+    // Else reduce quality/scale slightly for next attempt
+    quality = Math.max(0.5, quality - 0.1);
+    scale = Math.max(0.85, scale - 0.05);
   }
+
+  // Always download PDF — no alerts
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${name}.pdf`;
+  link.click();
+}
+
 </script>
 
 
 </body>
 </html>
+
 
 
 
