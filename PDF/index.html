@@ -63,21 +63,31 @@
 
   // Camera Initialization
   async function startCamera(cameraId = null) {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-
-    const constraints = {
-      video: cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' }
-    };
-
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      document.getElementById('camera').srcObject = stream;
-    } catch (err) {
-      alert("Camera not accessible.");
-    }
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
   }
+
+  const constraints = {
+    video: {
+      facingMode: 'environment',
+      width: { ideal: 1280 },  // Slightly better than default (~720p)
+      height: { ideal: 720 }
+    }
+  };
+
+  if (cameraId) {
+    constraints.video.deviceId = { exact: cameraId };
+    delete constraints.video.facingMode;
+  }
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    document.getElementById('camera').srcObject = stream;
+  } catch (err) {
+    alert("Camera not accessible.");
+  }
+}
+
 
   async function setupCameraSelector() {
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -203,7 +213,7 @@
   if (images.length === 0) return;
 
   const name = prompt("Enter document name:", "MyDocument") || "MyDocument";
-  let quality = 0.9;
+  let quality = 0.85;
   let scale = 1.0;
   let pdfBytes, blob;
 
@@ -212,11 +222,12 @@
 
     for (const canvas of images) {
       // Create scaled copy of canvas
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width * scale;
-      tempCanvas.height = canvas.height * scale;
-      const ctx = tempCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      const upscale = 1.05; // 5% upscale for sharpness
+const tempCanvas = document.createElement('canvas');
+tempCanvas.width = canvas.width * scale * upscale;
+tempCanvas.height = canvas.height * scale * upscale;
+const ctx = tempCanvas.getContext('2d');
+ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
 
       // Convert to JPEG with current quality
       const imgData = tempCanvas.toDataURL('image/jpeg', quality);
@@ -255,6 +266,7 @@
 
 </body>
 </html>
+
 
 
 
