@@ -61,55 +61,20 @@
     let stream;
 
     // Start camera
-    let stream;
-let currentCameraId = null;
-
-async function getCameras() {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  return devices.filter(device => device.kind === 'videoinput');
-}
-
-async function startCamera(cameraId = null) {
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-  }
-
-  const constraints = {
-    video: cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' }
-  };
-
+    async function startCamera() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
     document.getElementById('camera').srcObject = stream;
   } catch (err) {
-    alert("Could not access camera.");
-    console.error(err);
+    console.error("Camera access failed", err);
+    alert("Camera access failed: " + err.message);
   }
 }
 
-// Populate camera selector
-async function setupCameraSelector() {
-  const cameras = await getCameras();
-  const selector = document.createElement('select');
-  selector.id = 'cameraSelector';
-
-  cameras.forEach((cam, index) => {
-    const option = document.createElement('option');
-    option.value = cam.deviceId;
-    option.textContent = cam.label || `Camera ${index + 1}`;
-    selector.appendChild(option);
-  });
-
-  selector.onchange = () => {
-    currentCameraId = selector.value;
-    startCamera(currentCameraId);
-  };
-
-  document.body.insertBefore(selector, document.getElementById('camera'));
-}
-
-setupCameraSelector();
 startCamera();
+
 
 
     // Handle uploads
@@ -247,5 +212,6 @@ startCamera();
 
 </body>
 </html>
+
 
 
