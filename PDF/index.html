@@ -186,40 +186,66 @@ startCamera();
 
     // Export all images to compressed PDF
     async function exportPDF() {
-      if (images.length === 0) return alert("Please add at least one image.");
-      const name = prompt("Enter document name:", "MyDocument");
-      if (!name) return;
+  if (images.length === 0) return alert("Please add at least one image.");
+  const name = prompt("Enter document name:", "MyDocument");
+  if (!name) return;
 
-      const pdfDoc = await PDFLib.PDFDocument.create();
+  let quality = 0.5; // initial compression
+  let pdfBytes, blob;
+  let attempt = 0;
 
-      for (const canvas of images) {
-        const imgData = canvas.toDataURL('image/jpeg', 0.4); // Compressed JPEG
-        const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
-        const jpgImage = await pdfDoc.embedJpg(imgBytes);
-        const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
-        page.drawImage(jpgImage, {
-          x: 0,
-          y: 0,
-          width: jpgImage.width,
-          height: jpgImage.height
-        });
-      }
+  const pdfDoc = await PDFLib.PDFDocument.create();
 
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  for (const canvas of images) {
+    const imgData = canvas.toDataURL('image/jpeg', quality);
+    const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+    const jpgImage = await pdfDoc.embedJpg(imgBytes);
+    const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
+    page.drawImage(jpgImage, {
+      x: 0,
+      y: 0,
+      width: jpgImage.width,
+      height: jpgImage.height
+    });
+  }
 
-      const kbSize = (blob.size / 1024).toFixed(1);
-      if (blob.size > 300) {
-        alert(`⚠️ PDF is ${kbSize} KB (max ~300 KB). Try fewer images or crop smaller.`);
-      }
+  do {
+    pdfBytes = await pdfDoc.save();
+    blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const fileSize = blob.size;
 
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${name}.pdf`;
-      link.click();
+    if (fileSize < 150 * 1024 && quality < 0.9) {
+      quality += 0.1; // increase quality to raise size
+    } else if (fileSize > 300 * 1024 && quality > 0.1) {
+      quality -= 0.1; // reduce quality to compress more
+    } else {
+      break;
     }
+
+    attempt++;
+    if (attempt > 5) break; // avoid infinite loop
+  } while (blob.size < 150 * 1024 || blob.size > 300 * 1024);
+
+  const finalSizeKB = (blob.size / 1024).toFixed(1);
+
+  if (blob.size > 300 * 1024) {
+    alert(`⚠️ PDF is too large (${finalSizeKB} KB). Try cropping smaller.`);
+    return;
+  }
+
+  if (blob.size < 150 * 1024) {
+    alert(`⚠️ PDF is very small (${finalSizeKB} KB). Might be low quality.`);
+  }
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${name}.pdf`;
+  link.click();
+}
+
   </script>
 
 </body>
 </html>
+
 
