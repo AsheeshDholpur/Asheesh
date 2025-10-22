@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Creator</title>
+
+  <!-- Cropper.js -->
+  <link href="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
+  <script src="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.js"></script>
+
+  <!-- PDF-lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f2f2f2;
+      padding: 10px;
+      text-align: center;
+    }
+
+    video, img, canvas {
+      width: 90%;
+      max-width: 400px;
+      margin: 10px 0;
+      border: 2px solid #333;
+    }
+
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+
+    #preview-area {
+      margin-top: 20px;
+    }
+
+    .img-wrapper {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📄 PDF Creator</h2>
+
+  <!-- Camera View -->
+  <video id="camera" autoplay playsinline></video><br/>
+  <button onclick="capturePhoto()">📸 Capture Photo</button>
+  <input type="file" accept="image/*" id="uploadInput" multiple style="display:none"/>
+  <button onclick="document.getElementById('uploadInput').click()">📁 Upload Images</button>
+
+  <div id="preview-area"></div>
+
+  <button onclick="exportPDF()">📤 Export PDF</button>
+
+  <script>
+    const images = [];
+    let stream;
+
+    // Start camera
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById('camera').srcObject = stream;
+      } catch (err) {
+        alert("Camera not accessible.");
+      }
+    }
+
+    startCamera();
+
+    // Handle uploads
+    document.getElementById('uploadInput').addEventListener('change', (e) => {
+      const files = e.target.files;
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          createCropper(event.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Handle camera photo
+    function capturePhoto() {
+      const video = document.getElementById('camera');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL('image/jpeg');
+      createCropper(dataURL);
+    }
+
+    // Create cropping interface
+    function createCropper(src) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'img-wrapper';
+
+      const img = document.createElement('img');
+      img.src = src;
+      wrapper.appendChild(img);
+      document.getElementById('preview-area').appendChild(wrapper);
+
+      const cropper = new Cropper(img, {
+        viewMode: 1,
+        autoCropArea: 1,
+      });
+
+      const cropBtn = document.createElement('button');
+      cropBtn.textContent = '✂️ Confirm Crop';
+      cropBtn.onclick = () => {
+        const croppedCanvas = cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' });
+        cropper.destroy();
+        wrapper.innerHTML = '';
+        wrapper.appendChild(croppedCanvas);
+
+        images.push(croppedCanvas);
+
+        const enhanceBtn = document.createElement('button');
+        enhanceBtn.textContent = '✨ Enhance Image';
+        enhanceBtn.onclick = () => enhanceImage(croppedCanvas);
+        wrapper.appendChild(enhanceBtn);
+      };
+      wrapper.appendChild(cropBtn);
+    }
+
+    // Enhance image: brightness & contrast
+    function enhanceImage(canvas) {
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, data[i] * 1.1 + 10);     // Red
+        data[i + 1] = Math.min(255, data[i + 1] * 1.1 + 10); // Green
+        data[i + 2] = Math.min(255, data[i + 2] * 1.1 + 10); // Blue
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    // Export all images to compressed PDF
+    async function exportPDF() {
+      if (images.length === 0) return alert("Please add at least one image.");
+      const name = prompt("Enter document name:", "MyDocument");
+      if (!name) return;
+
+      const pdfDoc = await PDFLib.PDFDocument.create();
+
+      for (const canvas of images) {
+        const imgData = canvas.toDataURL('image/jpeg', 0.4); // Compressed JPEG
+        const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+        const jpgImage = await pdfDoc.embedJpg(imgBytes);
+        const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
+        page.drawImage(jpgImage, {
+          x: 0,
+          y: 0,
+          width: jpgImage.width,
+          height: jpgImage.height
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+      const kbSize = (blob.size / 1024).toFixed(1);
+      if (blob.size > 300) {
+        alert(`⚠️ PDF is ${kbSize} KB (max ~300 KB). Try fewer images or crop smaller.`);
+      }
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${name}.pdf`;
+      link.click();
+    }
+  </script>
+
+</body>
+</html>
