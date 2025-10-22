@@ -91,15 +91,25 @@ startCamera();
 
     // Handle camera photo
     function capturePhoto() {
-      const video = document.getElementById('camera');
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const dataURL = canvas.toDataURL('image/jpeg');
-      createCropper(dataURL);
-    }
+  if (images.length >= 3) {
+    alert("⚠️ Only 3 images allowed per PDF.");
+    return;
+  }
+
+  const video = document.getElementById('camera');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const dataURL = canvas.toDataURL('image/jpeg');
+  createCropper(dataURL);
+
+  // Trigger capture feedback (animation or sound)
+  showCaptureFeedback();
+}
+
 
     // Create cropping interface
     function createCropper(src) {
@@ -152,54 +162,54 @@ startCamera();
     // Export all images to compressed PDF
     async function exportPDF() {
   if (images.length === 0) return alert("Please add at least one image.");
+  if (images.length > 3) return alert("Only 3 images allowed in PDF.");
+
   const name = prompt("Enter document name:", "MyDocument");
   if (!name) return;
 
-  let quality = 0.5; // initial compression
+  let quality = 0.5;
   let pdfBytes, blob;
   let attempt = 0;
 
-  const pdfDoc = await PDFLib.PDFDocument.create();
+  while (attempt < 10) {
+    const pdfDoc = await PDFLib.PDFDocument.create();
 
-  for (const canvas of images) {
-    const imgData = canvas.toDataURL('image/jpeg', quality);
-    const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
-    const jpgImage = await pdfDoc.embedJpg(imgBytes);
-    const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
-    page.drawImage(jpgImage, {
-      x: 0,
-      y: 0,
-      width: jpgImage.width,
-      height: jpgImage.height
-    });
-  }
+    for (const canvas of images) {
+      const imgData = canvas.toDataURL('image/jpeg', quality);
+      const imgBytes = await fetch(imgData).then(res => res.arrayBuffer());
+      const jpgImage = await pdfDoc.embedJpg(imgBytes);
+      const page = pdfDoc.addPage([jpgImage.width, jpgImage.height]);
+      page.drawImage(jpgImage, {
+        x: 0,
+        y: 0,
+        width: jpgImage.width,
+        height: jpgImage.height
+      });
+    }
 
-  do {
     pdfBytes = await pdfDoc.save();
     blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const fileSize = blob.size;
+    const sizeKB = blob.size / 1024;
 
-    if (fileSize < 150 * 1024 && quality < 0.9) {
-      quality += 0.1; // increase quality to raise size
-    } else if (fileSize > 300 * 1024 && quality > 0.1) {
-      quality -= 0.1; // reduce quality to compress more
+    if (sizeKB >= 250 && sizeKB <= 300) {
+      break; // Success
+    }
+
+    if (sizeKB < 250 && quality < 0.9) {
+      quality += 0.05; // Increase quality to increase size
+    } else if (sizeKB > 300 && quality > 0.1) {
+      quality -= 0.05; // Decrease quality to reduce size
     } else {
-      break;
+      break; // Can't optimize further
     }
 
     attempt++;
-    if (attempt > 5) break; // avoid infinite loop
-  } while (blob.size < 150 * 1024 || blob.size > 300 * 1024);
-
-  const finalSizeKB = (blob.size / 1024).toFixed(1);
-
-  if (blob.size > 300 * 1024) {
-    alert(`⚠️ PDF is too large (${finalSizeKB} KB). Try cropping smaller.`);
-    return;
   }
 
-  if (blob.size < 150 * 1024) {
-    alert(`⚠️ PDF is very small (${finalSizeKB} KB). Might be low quality.`);
+  const finalKB = (blob.size / 1024).toFixed(1);
+  if (blob.size < 250 * 1024 || blob.size > 300 * 1024) {
+    alert(`⚠️ Couldn't meet size constraint. Final size: ${finalKB} KB.`);
+    return;
   }
 
   const link = document.createElement('a');
@@ -207,11 +217,35 @@ startCamera();
   link.download = `${name}.pdf`;
   link.click();
 }
+//camera-animation+sound
+    function showCaptureFeedback() {
+  // Flash effect
+  const flash = document.createElement('div');
+  flash.style.position = 'fixed';
+  flash.style.top = '0';
+  flash.style.left = '0';
+  flash.style.width = '100vw';
+  flash.style.height = '100vh';
+  flash.style.background = 'white';
+  flash.style.opacity = '0.6';
+  flash.style.zIndex = '9999';
+  document.body.appendChild(flash);
+
+  setTimeout(() => {
+    document.body.removeChild(flash);
+  }, 150);
+
+  // Optional: play shutter sound
+  const audio = new Audio('https://www.soundjay.com/mechanical/camera-shutter-click-01a.mp3');
+  audio.play().catch(() => {}); // Avoid error if autoplay is blocked
+}
+
 
   </script>
 
 </body>
 </html>
+
 
 
 
