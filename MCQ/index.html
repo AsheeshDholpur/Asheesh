@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MCQ ||| Tag Parser → Excel Export</title>
+
+<!-- XLSX LIB -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// ---------------- HIGHLIGHT TAGS -----------------
+
+function highlightTags(){
+  const caretPos = getCaretPosition(editorEl);
+
+  let content = editorEl.innerText;
+
+  const tags = ['\\|\\|\\|Q\\|\\|\\|','\\|\\|\\|A\\|\\|\\|','\\|\\|\\|B\\|\\|\\|','\\|\\|\\|C\\|\\|\\|','\\|\\|\\|D\\|\\|\\|','\\|\\|\\|ANS\\|\\|\\|','\\|\\|\\|EXP\\|\\|\\|'];
+
+  tags.forEach(t=>{
+    const reg = new RegExp(t,'g');
+    content = content.replace(reg, `<span class='tag-highlight'>$&</span>`);
+  });
+
+  content = content.replace(/Q\.\d+/g, `<span class='marker-highlight'>$&</span>`);
+  content = content.replace(/\([a-d]\)/gi, `<span class='marker-highlight'>$&</span>`);
+  content = content.replace(/Answer:/gi, `<span class='marker-highlight'>$&</span>`);
+  content = content.replace(/Explanation:/gi, `<span class='marker-highlight'>$&</span>`);
+
+  editorEl.innerHTML = content;
+
+  setCaretPosition(editorEl, caretPos);
+}
+
+function getCaretPosition(el){
+  let pos = 0;
+  const sel = window.getSelection();
+  if(sel.rangeCount){
+    const range = sel.getRangeAt(0);
+    const pre = range.cloneRange();
+    pre.selectNodeContents(el);
+    pre.setEnd(range.endContainer, range.endOffset);
+    pos = pre.toString().length;
+  }
+  return pos;
+}
+
+function setCaretPosition(el, pos){
+  const range = document.createRange();
+  const sel = window.getSelection();
+  let current = 0;
+
+  function traverse(node){
+    if(node.nodeType === 3){
+      const next = current + node.length;
+      if(pos <= next){
+        range.setStart(node, pos-current);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        throw 'done';
+      }
+      current = next;
+    } else {
+      node.childNodes.forEach(traverse);
+    }
+  }
+
+  try{ traverse(el); } catch(e){}
+}
+
+function toggleFullscreen(){
+  document.body.classList.toggle('editor-fullscreen');
+}
+</script>
+
+<style>
+.error-highlight{color:#ef4444;font-weight:bold}
+.tag-highlight{color:#22c55e;font-weight:bold}
+.marker-highlight{color:#facc15;font-weight:bold}
+.editor-only-fullscreen #textInput{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  z-index:9999;
+  background:#020617;
+  border-radius:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+#textInput:focus{box-shadow:0 0 0 2px rgba(34,197,94,0.3)}
+</style>
+
+<style>
+body{background:#0f172a;color:#e5e7eb;font-family:Arial;padding:20px}
+.container{max-width:100%;width:100%;margin:0 auto}
+h2{margin-bottom:10px}
+input,button{padding:8px;margin:6px 0;border-radius:6px;border:none}
+button{background:#2563eb;color:white;cursor:pointer}
+button:hover{background:#1d4ed8}
+.preview{background:#020617;border:1px solid #1e293b;padding:10px;margin-top:15px;border-radius:8px;max-height:300px;overflow:auto;font-size:13px}
+.row{border-bottom:1px solid #334155;padding:6px}
+.tag{color:#22c55e;font-weight:bold}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>📘 MCQ Tag Parser (||| Based)
+<span id="qCounter" style="font-size:14px;color:#facc15;margin-left:10px">(Questions: 0)</span>
+</h2>
+
+<p>Required Tags Format:</p>
+<div class="preview">
+<span class="tag">|||Q|||</span> Question Text<br>
+<span class="tag">|||A|||</span> Option A<br>
+<span class="tag">|||B|||</span> Option B<br>
+<span class="tag">|||C|||</span> Option C<br>
+<span class="tag">|||D|||</span> Option D<br>
+<span class="tag">|||ANS|||</span> Correct Answer<br>
+<span class="tag">|||EXP|||</span> Explanation
+</div>
+
+<div id="editorWrapper" style="position:relative">
+<div id="textInput" contenteditable="true"
+placeholder="Paste your tagged MCQ content here (with |||Q|||, |||A||| etc)..."
+style="width:100%;min-height:260px;background:#020617;color:#e5e7eb;border:1px solid #1e293b;border-radius:8px;padding:12px 12px 12px 25px;box-sizing:border-box;white-space:pre-wrap;outline:none">
+</div>
+</div>
+
+<br>
+<button onclick="saveDraft()">Save Draft</button>
+<button onclick="parseContent()">Parse Content</button>
+<button onclick="exportExcel()">Download Excel</button>
+
+<div id="output" class="preview"></div>
+</div>
+
+<script>
+let parsedData = [];
+
+function parseContent(){
+
+  const text = document.getElementById('textInput').innerText;
+
+  if(!text.trim()){
+    alert('Please paste content first');
+    return;
+  }
+
+  const blocks = text.split('|||Q|||').filter(b=>b.trim()!=='');
+
+  let errorMessages = [];
+
+  blocks.forEach((block, index)=>{
+
+    const requiredTags = [
+      '|||A|||','|||B|||','|||C|||',
+      '|||D|||','|||ANS|||','|||EXP|||'
+    ];
+
+    requiredTags.forEach(tag=>{
+      if(!block.includes(tag)){
+        errorMessages.push(`Q${index+1} missing ${tag}`);
+      }
+    });
+
+  });
+
+  if(errorMessages.length > 0){
+    alert("Missing Tags Detected:\n\n" + errorMessages.join("\n"));
+    highlightMissingTags();
+    return;
+  }
+
+  processText(text);
+}
+
+function processText(text){
+  parsedData = [];
+
+  const blocks = text.split('|||Q|||').filter(b=>b.trim()!=='');
+
+  blocks.forEach(block=>{
+
+    const get = (tag) => {
+      const part = block.split(tag)[1];
+      if(!part) return '';
+      return part.split('|||')[0].trim();
+    }
+
+    const q = block.split('|||A|||')[0].trim();
+
+    parsedData.push({
+      Question: q,
+      OptionA: get('|||A|||'),
+      OptionB: get('|||B|||'),
+      OptionC: get('|||C|||'),
+      OptionD: get('|||D|||'),
+      Answer: get('|||ANS|||'),
+      Explanation: get('|||EXP|||')
+    });
+  });
+
+  preview();
+}
+
+function preview(){
+  const out = document.getElementById('output');
+  out.innerHTML='';
+
+  parsedData.forEach((r,i)=>{
+    out.innerHTML += `<div class='row'>
+<b>Q${i+1}</b><br>
+<b>Question:</b> ${r.Question}<br>
+<b>A:</b> ${r.OptionA}<br>
+<b>B:</b> ${r.OptionB}<br>
+<b>C:</b> ${r.OptionC}<br>
+<b>D:</b> ${r.OptionD}<br>
+<b>Answer:</b> ${r.Answer}<br>
+<b>Explanation:</b> ${r.Explanation}
+</div>`;
+  });
+}
+
+function exportExcel(){
+  if(parsedData.length===0){ alert('Parse file first'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(parsedData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'MCQs');
+  XLSX.writeFile(wb, 'MCQ_Output.xlsx');
+}
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const editor = document.getElementById("textInput");
+  if(editor){
+    editor.addEventListener("contextmenu", function(e){
+      e.preventDefault();
+      return false;
+    });
+  }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  window.editorEl = document.getElementById("textInput");
+  if(editorEl){
+    editorEl.addEventListener("input", highlightTags);
+  }
+});
+</script>
+
+<script>
+document.addEventListener("keydown", function(e){
+
+  if(e.key === "F11"){
+    e.preventDefault();
+    document.body.classList.toggle("editor-only-fullscreen");
+  }
+
+  if(e.key === "Escape"){
+    document.body.classList.remove("editor-only-fullscreen");
+  }
+});
+</script>
+
+<script>
+function updateCounter(){
+  const editor = document.getElementById("textInput");
+  const counter = document.getElementById("qCounter");
+
+  if(!editor || !counter) return;
+
+  const text = editor.innerText || "";
+  const count = (text.match(/\|\|\|Q\|\|\|/g) || []).length;
+
+  counter.textContent = `(Questions: ${count})`;
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  const editor = document.getElementById("textInput");
+  if(editor){
+    editor.addEventListener("input", updateCounter);
+  }
+});
+</script>
+
+<script>
+function highlightMissingTags(){
+
+  const editor = document.getElementById("textInput");
+  let content = editor.innerHTML;
+
+  const tags = ['|||A|||','|||B|||','|||C|||','|||D|||','|||ANS|||','|||EXP|||'];
+
+  tags.forEach(tag=>{
+    const reg = new RegExp(tag, 'g');
+    content = content.replace(reg, `<span class='error-highlight'>${tag}</span>`);
+  });
+
+  editor.innerHTML = content;
+}
+</script>
+
+<script>
+const STORAGE_KEY = "mcq_editor_draft";
+
+function saveDraft(){
+  const editor = document.getElementById("textInput");
+  const content = editor.innerHTML;
+  localStorage.setItem(STORAGE_KEY, content);
+  alert("Draft saved successfully ✅");
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+
+  const editor = document.getElementById("textInput");
+  const saved = localStorage.getItem(STORAGE_KEY);
+
+  if(saved){
+    editor.innerHTML = saved;
+    if(typeof highlightTags === "function") highlightTags();
+    if(typeof updateCounter === "function") updateCounter();
+  }
+});
+</script>
+
+<script>
+// -------- CURSOR JUMP NAVIGATION --------
+
+document.addEventListener("keydown", function(e){
+
+  if(e.key === "F2"){
+    e.preventDefault();
+    jumpMarker(true);
+  }
+
+  if(e.key === "F3"){
+    e.preventDefault();
+    jumpMarker(false);
+  }
+});
+
+function jumpMarker(forward){
+
+  const editor = document.getElementById("textInput");
+  editor.focus();
+
+  const text = editor.innerText;
+  const markersRegex = /Q\.\d+|\([a-d]\)|Answer:|Explanation:/gi;
+
+  let matches = [];
+  let match;
+
+  while((match = markersRegex.exec(text)) !== null){
+    matches.push(match.index);
+  }
+
+  if(matches.length === 0) return;
+
+  const caretPos = getCaretTextPosition(editor);
+
+  let target;
+
+  if(forward){
+    target = matches.find(pos => pos > caretPos);
+    if(target === undefined) target = matches[0];
+  } else {
+    const prev = matches.filter(pos => pos < caretPos);
+    target = prev.length ? prev[prev.length - 1] : matches[matches.length - 1];
+  }
+
+  setCaretPosition(editor, target);
+
+  // === GUARANTEED CARET FOCUS FIX ===
+  setTimeout(() => {
+
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+
+    const range = sel.getRangeAt(0);
+
+    const anchor = document.createElement("span");
+    anchor.innerHTML = "\u200B";
+    anchor.style.position = "absolute";
+    anchor.style.opacity = "0";
+
+    range.insertNode(anchor);
+
+    anchor.scrollIntoView({
+      block: "nearest",
+      inline: "nearest"
+    });
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(anchor);
+    newRange.collapse(true);
+
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
+    anchor.parentNode.removeChild(anchor);
+
+  }, 5);
+}
+
+function getCaretTextPosition(el){
+
+  let caret = 0;
+  const sel = window.getSelection();
+
+  if(sel.rangeCount){
+    const range = sel.getRangeAt(0);
+    const pre = range.cloneRange();
+    pre.selectNodeContents(el);
+    pre.setEnd(range.endContainer, range.endOffset);
+    caret = pre.toString().length;
+  }
+
+  return caret;
+}
+</script>
+
+</body>
+</html>
