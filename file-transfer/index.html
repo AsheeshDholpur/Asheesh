@@ -19,14 +19,16 @@
 <style>
 
 :root {
-  --bg: #0a0e17;
-  --panel: rgba(255,255,255,0.05);
-  --border: rgba(255,255,255,0.12);
-  --text: #f2f5f9;
+  --bg: #0f1117;
+  --panel: #161b22;
+  --border: #22262e;
+  --text: #e6eaf0;
   --muted: #9aa4b2;
-  --primary: #7cf7ff;
-  --accent: #9b7cff;
-  --radius: 18px;
+
+  --primary: #3b82f6;   /* Professional Blue */
+  --accent: #6366f1;    /* Soft Indigo */
+
+  --radius: 14px;
 }
 
 * {
@@ -66,7 +68,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  background: linear-gradient(90deg, #e6eaf0, #c7d2fe);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -99,19 +101,16 @@ body {
 /* ===== Cards ===== */
 
 .transfer-card {
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,0.06),
-    rgba(255,255,255,0.02)
-  );
 
+  background: var(--panel);
   border: 1px solid var(--border);
+
   border-radius: var(--radius);
   padding: 26px;
 
-  backdrop-filter: blur(14px);
-  box-shadow: 0 25px 60px rgba(0,0,0,.4);
+  box-shadow: 0 12px 28px rgba(0,0,0,.35);
 }
+
 
 /* ===== Card Header ===== */
 
@@ -165,28 +164,36 @@ input:focus {
 /* ===== Buttons ===== */
 
 .action-btn {
+
   width: 100%;
   padding: 13px;
 
-  border-radius: 14px;
+  border-radius: 10px;
   border: none;
-  cursor: pointer;
 
   font-weight: 600;
   font-size: .95rem;
 
-  color: #000;
+  color: #fff;
 
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(
+    135deg,
+    var(--primary),
+    var(--accent)
+  );
 
-  box-shadow: 0 10px 30px rgba(124,247,255,.35);
-
-  transition: .18s ease;
+  cursor: pointer;
+  transition: all .15s ease;
 }
 
 .action-btn:hover {
+  opacity: .9;
+  transform: translateY(-1px);
+}
+
+
+.action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 38px rgba(124,247,255,.45);
 }
 
 /* ===== Progress ===== */
@@ -339,3 +346,4 @@ progress::-webkit-progress-value {
 
 </body>
 </html>
+
