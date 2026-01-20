@@ -1,266 +1,341 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P File Transfer</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    :root {
-      --bg: #0b0f1a;
-      --card-bg: rgba(255, 255, 255, 0.06);
-      --border: rgba(255, 255, 255, 0.12);
-      --primary: #7cf7ff;
-      --accent: #9d7bff;
-      --text: #e8ebf1;
-      --muted: #9aa3b2;
-      --radius: 16px;
-    }
+<title>Secure File Transfer — Asheesh.in</title>
 
-    * {
-      box-sizing: border-box;
-      font-family: "Inter", system-ui, sans-serif;
-    }
+<meta name="description" content="Private peer-to-peer secure file sharing. No cloud storage. No tracking. End-to-end direct transfer.">
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-    }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    canvas#liquid-bg {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-    }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    .container {
-      max-width: 960px;
-      padding: 48px 20px 64px;
-      margin: 0 auto;
-    }
+<link rel="icon" href="favicon.png">
 
-    header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
+<style>
 
-    header h1 {
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      margin: 0 0 12px;
-      font-weight: 700;
-    }
+:root {
+  --bg: #0a0e17;
+  --panel: rgba(255,255,255,0.05);
+  --border: rgba(255,255,255,0.12);
+  --text: #f2f5f9;
+  --muted: #9aa4b2;
+  --primary: #7cf7ff;
+  --accent: #9b7cff;
+  --radius: 18px;
+}
 
-    .glow {
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 24px rgba(124, 247, 255, 0.25);
-    }
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
+}
 
-    header p {
-      color: var(--muted);
-      max-width: 520px;
-      margin: 0 auto;
-      font-size: 0.95rem;
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(124,247,255,.06), transparent),
+    radial-gradient(circle at 80% 90%, rgba(155,124,255,.06), transparent),
+    var(--bg);
+  color: var(--text);
+}
 
-    #status {
-      text-align: center;
-      margin-bottom: 32px;
-      min-height: 20px;
-      font-size: 0.9rem;
-      color: var(--primary);
-    }
+/* ===== Layout ===== */
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
+.app-wrapper {
+  max-width: 1100px;
+  margin: auto;
+  padding: 40px 20px 70px;
+}
 
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      backdrop-filter: blur(14px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-    }
+/* ===== Header ===== */
 
-    .card h2 {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.25rem;
-      margin: 0 0 20px;
-      font-weight: 600;
-    }
+.app-header {
+  text-align: center;
+  margin-bottom: 46px;
+}
 
-    .icon-img {
-      width: 28px;
-      height: 28px;
-    }
+.app-title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
+.gradient-text {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-    input[type="text"],
-    input[type="file"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.3);
-      color: var(--text);
-      margin-bottom: 14px;
-      outline: none;
-    }
+.subtitle {
+  max-width: 520px;
+  margin: auto;
+  font-size: .95rem;
+  color: var(--muted);
+}
 
-    input[type="text"]:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(124, 247, 255, 0.15);
-    }
+/* ===== Status ===== */
 
-    .neon-btn {
-      width: 100%;
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #000;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      box-shadow: 0 8px 30px rgba(124, 247, 255, 0.35);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
+#status {
+  text-align: center;
+  min-height: 20px;
+  margin-bottom: 26px;
+  font-size: .85rem;
+  color: var(--primary);
+}
 
-    .neon-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 12px 36px rgba(124, 247, 255, 0.45);
-    }
+/* ===== Main Grid ===== */
 
-    .progress-group {
-      margin-top: 16px;
-    }
+.transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px,1fr));
+  gap: 28px;
+}
 
-    progress {
-      width: 100%;
-      height: 10px;
-      border-radius: 999px;
-      overflow: hidden;
-    }
+/* ===== Cards ===== */
 
-    progress::-webkit-progress-bar {
-      background: rgba(255, 255, 255, 0.1);
-    }
+.transfer-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.06),
+    rgba(255,255,255,0.02)
+  );
 
-    progress::-webkit-progress-value {
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-    }
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px;
 
-    .progress-group span {
-      display: block;
-      margin-top: 6px;
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: right;
-    }
+  backdrop-filter: blur(14px);
+  box-shadow: 0 25px 60px rgba(0,0,0,.4);
+}
 
-    .download-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 16px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-weight: 600;
-      color: #000;
-      background: linear-gradient(135deg, #9dffb0, #7cf7ff);
-      box-shadow: 0 10px 30px rgba(124, 247, 255, 0.35);
-    }
+/* ===== Card Header ===== */
 
-    @media (max-width: 480px) {
-      .container {
-        padding-top: 32px;
-      }
-    }
-  </style>
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.card-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* ===== Inputs ===== */
+
+label {
+  display: block;
+  font-size: .78rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="file"] {
+
+  width: 100%;
+  padding: 13px 14px;
+
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  color: var(--text);
+  outline: none;
+
+  margin-bottom: 14px;
+}
+
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(124,247,255,.15);
+}
+
+/* ===== Buttons ===== */
+
+.action-btn {
+  width: 100%;
+  padding: 13px;
+
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+
+  font-weight: 600;
+  font-size: .95rem;
+
+  color: #000;
+
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+
+  box-shadow: 0 10px 30px rgba(124,247,255,.35);
+
+  transition: .18s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 38px rgba(124,247,255,.45);
+}
+
+/* ===== Progress ===== */
+
+.progress-wrap {
+  margin-top: 16px;
+}
+
+progress {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: rgba(255,255,255,.1);
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(90deg,var(--primary),var(--accent));
+}
+
+.progress-text {
+  text-align: right;
+  font-size: .75rem;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* ===== Download Button ===== */
+
+.download-btn {
+
+  display: none;
+  margin-top: 16px;
+
+  text-decoration: none;
+
+  padding: 12px 16px;
+
+  border-radius: 14px;
+
+  font-weight: 600;
+
+  color: #000;
+
+  background: linear-gradient(135deg,#9dffb0,#7cf7ff);
+
+  box-shadow: 0 10px 26px rgba(124,247,255,.35);
+
+  text-align: center;
+}
+
+/* ===== Mobile ===== */
+
+@media(max-width:480px){
+
+  .app-wrapper{
+    padding-top: 28px;
+  }
+
+}
+
+</style>
+
 </head>
 
 <body>
-  <!-- Liquid background -->
-  <canvas id="liquid-bg"></canvas>
 
-  <div class="container">
-    <header>
-      <h1><span class="glow">P2P File Transfer</span></h1>
-      <p>Secure, direct file sharing between devices. No uploads. No storage. Just peer-to-peer.</p>
-    </header>
+<div class="app-wrapper">
 
-    <div id="status"></div>
+  <!-- HEADER -->
+  <header class="app-header">
 
-    <section class="grid">
-      <!-- Send -->
-      <div class="card">
-        <h2>
-          <img src="send.png" alt="Send File" class="icon-img" />
-          Send File
-        </h2>
+    <h1 class="app-title">
+      <span class="gradient-text">Secure File Transfer</span>
+    </h1>
 
-        <label for="send-room">Room ID</label>
-        <input type="text" id="send-room" placeholder="Enter room ID" />
+    <p class="subtitle">
+      Direct peer-to-peer file sharing. No cloud storage. No tracking. Fully private.
+    </p>
 
-        <label for="file-input">Select file</label>
-        <input type="file" id="file-input" />
+  </header>
 
-        <button id="send-btn" class="neon-btn">Send File</button>
+  <!-- STATUS -->
+  <div id="status"></div>
 
-        <div class="progress-group" id="send-progress-group" style="display:none;">
-          <progress id="send-progress" value="0" max="100"></progress>
-          <span id="send-progress-text"></span>
-        </div>
+  <!-- MAIN GRID -->
+  <section class="transfer-grid">
+
+    <!-- SEND -->
+    <div class="transfer-card">
+
+      <div class="card-header">
+        <img src="send.png" class="card-icon">
+        <div class="card-title">Send File</div>
       </div>
 
-      <!-- Receive -->
-      <div class="card">
-        <h2>
-          <img src="receive.png" alt="Receive File" class="icon-img" />
-          Receive File
-        </h2>
+      <label>Room ID</label>
+      <input type="text" id="send-room" placeholder="Enter room code">
 
-        <label for="receive-room">Room ID</label>
-        <input type="text" id="receive-room" placeholder="Enter room ID" />
+      <label>Select file</label>
+      <input type="file" id="file-input">
 
-        <button id="receive-btn" class="neon-btn">Receive File</button>
+      <button id="send-btn" class="action-btn">
+        Send Securely
+      </button>
 
-        <div class="progress-group" id="receive-progress-group" style="display:none;">
-          <progress id="receive-progress" value="0" max="100"></progress>
-          <span id="receive-progress-text"></span>
-        </div>
-
-        <a id="download-link" class="download-link" style="display:none;">
-          <img src="receive.png" alt="Download" width="22" height="22">
-          Download File
-        </a>
+      <div class="progress-wrap" id="send-progress-group" style="display:none;">
+        <progress id="send-progress" value="0" max="100"></progress>
+        <div class="progress-text" id="send-progress-text"></div>
       </div>
-    </section>
-  </div>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="app.js"></script>
-  <script src="liquid-bg.js"></script>
+    </div>
+
+    <!-- RECEIVE -->
+    <div class="transfer-card">
+
+      <div class="card-header">
+        <img src="receive.png" class="card-icon">
+        <div class="card-title">Receive File</div>
+      </div>
+
+      <label>Room ID</label>
+      <input type="text" id="receive-room" placeholder="Enter room code">
+
+      <button id="receive-btn" class="action-btn">
+        Connect & Receive
+      </button>
+
+      <div class="progress-wrap" id="receive-progress-group" style="display:none;">
+        <progress id="receive-progress" value="0" max="100"></progress>
+        <div class="progress-text" id="receive-progress-text"></div>
+      </div>
+
+      <a id="download-link" class="download-btn">
+        Download File
+      </a>
+
+    </div>
+
+  </section>
+
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="app.js"></script>
+
 </body>
 </html>
