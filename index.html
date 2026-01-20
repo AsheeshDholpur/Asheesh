@@ -1,12 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>P2P File Transfer</title>
 
-  <!-- Fonts -->
+  <!-- ================= SEO META ================= -->
+  <meta charset="UTF-8" />
+
+  <meta name="description" content="Asheesh Sharma - Cyber Security Researcher, Ethical Hacker">
+  <meta name="keywords" content="Cyber Security, Ethical Hacker, Asheesh Sharma, Bug Bounty, Penetration Testing, Security Researcher">
+  <meta name="author" content="Asheesh Sharma">
+
+  <!-- ================= SOCIAL PREVIEW ================= -->
+  <meta property="og:title" content="Asheesh.in - Cyber Security Researcher">
+  <meta property="og:description" content="Asheesh Sharma - Security Researcher & Ethical Hacker">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://asheesh.in/preview.png">
+  <meta property="og:url" content="https://asheesh.in">
+
+  <!-- ================= SECURITY ================= -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="referrer" content="strict-origin">
+
+  <!-- ================= RESPONSIVE ================= -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Asheesh.in — Secure File Transfer</title>
+
+  <!-- ================= PERFORMANCE ================= -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- ================= FONTS ================= -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ================= FAVICON ================= -->
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <style>
     :root {
@@ -89,7 +116,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 24px;
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(12px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
     }
 
@@ -201,22 +228,26 @@
 </head>
 
 <body>
-  <!-- Liquid background -->
+
+  <!-- Liquid Background -->
   <canvas id="liquid-bg"></canvas>
 
   <div class="container">
+
     <header>
       <h1><span class="glow">P2P File Transfer</span></h1>
       <p>Secure, direct file sharing between devices. No uploads. No storage. Just peer-to-peer.</p>
     </header>
 
-    <div id="status"></div>
+    <div id="status" aria-live="polite"></div>
 
     <section class="grid">
-      <!-- Send -->
+
+      <!-- SEND CARD -->
       <div class="card">
+
         <h2>
-          <img src="send.png" alt="Send File" class="icon-img" />
+          <img src="send.png" alt="Send File Icon" class="icon-img" />
           Send File
         </h2>
 
@@ -226,41 +257,52 @@
         <label for="file-input">Select file</label>
         <input type="file" id="file-input" />
 
-        <button id="send-btn" class="neon-btn">Send File</button>
+        <button id="send-btn" class="neon-btn" aria-label="Send file to peer">
+          Send File
+        </button>
 
         <div class="progress-group" id="send-progress-group" style="display:none;">
           <progress id="send-progress" value="0" max="100"></progress>
           <span id="send-progress-text"></span>
         </div>
+
       </div>
 
-      <!-- Receive -->
+      <!-- RECEIVE CARD -->
       <div class="card">
+
         <h2>
-          <img src="receive.png" alt="Receive File" class="icon-img" />
+          <img src="receive.png" alt="Receive File Icon" class="icon-img" />
           Receive File
         </h2>
 
         <label for="receive-room">Room ID</label>
         <input type="text" id="receive-room" placeholder="Enter room ID" />
 
-        <button id="receive-btn" class="neon-btn">Receive File</button>
+        <button id="receive-btn" class="neon-btn" aria-label="Receive file from peer">
+          Receive File
+        </button>
 
         <div class="progress-group" id="receive-progress-group" style="display:none;">
           <progress id="receive-progress" value="0" max="100"></progress>
           <span id="receive-progress-text"></span>
         </div>
 
-        <a id="download-link" class="download-link" style="display:none;">
-          <img src="receive.png" alt="Download" width="22" height="22">
+        <a id="download-link" class="download-link" style="display:none;" aria-label="Download received file">
+          <img src="receive.png" alt="Download Icon" width="22" height="22">
           Download File
         </a>
+
       </div>
+
     </section>
+
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="app.js"></script>
   <script src="liquid-bg.js"></script>
+
 </body>
 </html>
