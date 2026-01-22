@@ -36,273 +36,368 @@
   <link rel="icon" type="image/png" href="favicon.png">
 
   <style>
-    :root {
-      --bg: #0b0f1a;
-      --card-bg: rgba(255, 255, 255, 0.06);
-      --border: rgba(255, 255, 255, 0.12);
-      --primary: #7cf7ff;
-      --accent: #9d7bff;
-      --text: #e8ebf1;
-      --muted: #9aa3b2;
-      --radius: 16px;
-    }
+/* ===============================
+   Premium Neutral Theme
+   =============================== */
 
-    * {
-      box-sizing: border-box;
-      font-family: "Inter", system-ui, sans-serif;
-    }
+:root {
+  --bg: #0a0a0b;
+  --panel: #121214;
+  --panel-soft: #16161a;
+  --border: rgba(255,255,255,.06);
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-    }
+  --text: #f5f5f7;
+  --muted: #9ca3af;
 
-    canvas#liquid-bg {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-    }
+  --accent: #7c7cff; /* Linear / Vercel style accent */
+  --accent-soft: rgba(124,124,255,.15);
 
-    .container {
-      max-width: 960px;
-      padding: 48px 20px 64px;
-      margin: 0 auto;
-    }
+  --radius: 16px;
+}
 
-    header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
+/* ===============================
+   Base
+   =============================== */
 
-    header h1 {
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      margin: 0 0 12px;
-      font-weight: 700;
-    }
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
+}
 
-    .glow {
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 24px rgba(124, 247, 255, 0.25);
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(700px at 50% -200px, rgba(124,124,255,.06), transparent),
+    var(--bg);
+  color: var(--text);
+}
 
-    header p {
-      color: var(--muted);
-      max-width: 520px;
-      margin: 0 auto;
-      font-size: 0.95rem;
-    }
+/* ===============================
+   Layout
+   =============================== */
 
-    #status {
-      text-align: center;
-      margin-bottom: 32px;
-      min-height: 20px;
-      font-size: 0.9rem;
-      color: var(--primary);
-    }
+.app-wrapper {
+  max-width: 1040px;
+  margin: auto;
+  padding: 56px 20px 80px;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
+/* ===============================
+   Header
+   =============================== */
 
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-    }
+.app-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
 
-    .card h2 {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.25rem;
-      margin: 0 0 20px;
-      font-weight: 600;
-    }
+.brand {
+  font-size: .75rem;
+  letter-spacing: .3em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
 
-    .icon-img {
-      width: 28px;
-      height: 28px;
-    }
+.app-title {
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 700;
+  margin: 0 0 16px;
+}
 
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
+.app-title span {
+  background: linear-gradient(180deg, #ffffff, #d4d4d8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-    input[type="text"],
-    input[type="file"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.3);
-      color: var(--text);
-      margin-bottom: 14px;
-      outline: none;
-    }
+.subtitle {
+  max-width: 560px;
+  margin: auto;
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
 
-    input[type="text"]:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(124, 247, 255, 0.15);
-    }
+/* ===============================
+   Status
+   =============================== */
 
-    .neon-btn {
-      width: 100%;
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #000;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      box-shadow: 0 8px 30px rgba(124, 247, 255, 0.35);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
+#status {
+  text-align: center;
+  min-height: 22px;
+  margin-bottom: 40px;
+  font-size: .8rem;
+  color: var(--accent);
+}
 
-    .neon-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 12px 36px rgba(124, 247, 255, 0.45);
-    }
+/* ===============================
+   Grid
+   =============================== */
 
-    .progress-group {
-      margin-top: 16px;
-    }
+.transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 32px;
+}
 
-    progress {
-      width: 100%;
-      height: 10px;
-      border-radius: 999px;
-      overflow: hidden;
-    }
+/* ===============================
+   Cards
+   =============================== */
 
-    progress::-webkit-progress-bar {
-      background: rgba(255, 255, 255, 0.1);
-    }
+.transfer-card {
+  background: linear-gradient(
+    180deg,
+    var(--panel),
+    var(--panel-soft)
+  );
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow:
+    0 30px 60px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
 
-    progress::-webkit-progress-value {
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-    }
+/* ===============================
+   Card Header
+   =============================== */
 
-    .progress-group span {
-      display: block;
-      margin-top: 6px;
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: right;
-    }
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
 
-    .download-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 16px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-weight: 600;
-      color: #000;
-      background: linear-gradient(135deg, #9dffb0, #7cf7ff);
-      box-shadow: 0 10px 30px rgba(124, 247, 255, 0.35);
-    }
+.card-icon {
+  width: 34px;
+  height: 34px;
+  opacity: .9;
+}
 
-    @media (max-width: 480px) {
-      .container {
-        padding-top: 32px;
-      }
-    }
-  </style>
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+/* ===============================
+   Inputs
+   =============================== */
+
+label {
+  display: block;
+  font-size: .75rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="file"] {
+  width: 100%;
+  background: #0b0b0e;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 14px;
+  color: var(--text);
+  margin-bottom: 18px;
+}
+
+input::placeholder {
+  color: #6b7280;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ===============================
+   Buttons
+   =============================== */
+
+.action-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: .95rem;
+  color: #fff;
+  background:
+    linear-gradient(180deg, #1c1c22, #121216);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.action-btn:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 12px 30px rgba(0,0,0,.6);
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+/* ===============================
+   Progress
+   =============================== */
+
+.progress-wrap {
+  margin-top: 20px;
+}
+
+progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: rgba(255,255,255,.08);
+}
+
+progress::-webkit-progress-value {
+  background: var(--accent);
+}
+
+.progress-text {
+  text-align: right;
+  font-size: .7rem;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* ===============================
+   Download Button
+   =============================== */
+
+.download-btn {
+  display: none;
+  margin-top: 20px;
+  padding: 13px 14px;
+
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: .9rem;
+
+  text-decoration: none;
+  text-align: center;
+
+  color: var(--text);
+  background: linear-gradient(
+    180deg,
+    #1a1a22,
+    #111118
+  );
+
+  border: 1px solid rgba(124,124,255,.25);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 12px 24px rgba(0,0,0,.5);
+
+  transition: all .15s ease;
+}
+
+.download-btn:hover {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 16px 32px rgba(0,0,0,.6);
+  transform: translateY(-1px);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+}
+
+/* ===============================
+   Footer
+   =============================== */
+
+.footer {
+  text-align: center;
+  margin-top: 72px;
+  font-size: .7rem;
+  color: #6b7280;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- Liquid Background -->
-  <canvas id="liquid-bg"></canvas>
+<div class="app-wrapper">
 
-  <div class="container">
+  <header class="app-header">
+    <div class="brand">ASHEESH.IN</div>
+    <h1 class="app-title"><span>Secure File Transfer</span></h1>
+    <p class="subtitle">
+      Private, end-to-end encrypted file transfer.<br>
+      No servers. No storage. No tracking.
+    </p>
+  </header>
 
-    <header>
-      <h1><span class="glow">Secure File Transfer</span></h1>
-      <p>Secure, direct file sharing between devices. No uploads. No storage. Just peer-to-peer.</p>
-    </header>
+  <div id="status"></div>
 
-    <div id="status" aria-live="polite"></div>
+  <section class="transfer-grid">
 
-    <section class="grid">
-
-      <!-- SEND CARD -->
-      <div class="card">
-
-        <h2>
-          <img src="send.png" alt="Send File Icon" class="icon-img" />
-          Send File
-        </h2>
-
-        <label for="send-room">Room ID</label>
-        <input type="text" id="send-room" placeholder="Enter room ID" />
-
-        <label for="file-input">Select file</label>
-        <input type="file" id="file-input" />
-
-        <button id="send-btn" class="neon-btn" aria-label="Send file to peer">
-          Send File
-        </button>
-
-        <div class="progress-group" id="send-progress-group" style="display:none;">
-          <progress id="send-progress" value="0" max="100"></progress>
-          <span id="send-progress-text"></span>
-        </div>
-
+    <!-- SEND -->
+    <div class="transfer-card">
+      <div class="card-header">
+        <img src="send.png" class="card-icon">
+        <div class="card-title">Send File</div>
       </div>
 
-      <!-- RECEIVE CARD -->
-      <div class="card">
+      <label>Room ID</label>
+      <input type="text" id="send-room" placeholder="Enter room code">
 
-        <h2>
-          <img src="receive.png" alt="Receive File Icon" class="icon-img" />
-          Receive File
-        </h2>
+      <label>Select file</label>
+      <input type="file" id="file-input">
 
-        <label for="receive-room">Room ID</label>
-        <input type="text" id="receive-room" placeholder="Enter room ID" />
+      <button id="send-btn" class="action-btn">Send securely</button>
 
-        <button id="receive-btn" class="neon-btn" aria-label="Receive file from peer">
-          Receive File
-        </button>
+      <div class="progress-wrap" id="send-progress-group" style="display:none;">
+        <progress id="send-progress" value="0" max="100"></progress>
+        <div class="progress-text" id="send-progress-text"></div>
+      </div>
+    </div>
 
-        <div class="progress-group" id="receive-progress-group" style="display:none;">
-          <progress id="receive-progress" value="0" max="100"></progress>
-          <span id="receive-progress-text"></span>
-        </div>
-
-        <a id="download-link" class="download-link" style="display:none;" aria-label="Download received file">
-          <img src="receive.png" alt="Download Icon" width="22" height="22">
-          Download File
-        </a>
-
+    <!-- RECEIVE -->
+    <div class="transfer-card">
+      <div class="card-header">
+        <img src="receive.png" class="card-icon">
+        <div class="card-title">Receive File</div>
       </div>
 
-    </section>
+      <label>Room ID</label>
+      <input type="text" id="receive-room" placeholder="Enter room code">
 
+      <button id="receive-btn" class="action-btn">Connect & receive</button>
+
+      <div class="progress-wrap" id="receive-progress-group" style="display:none;">
+        <progress id="receive-progress" value="0" max="100"></progress>
+        <div class="progress-text" id="receive-progress-text"></div>
+      </div>
+
+      <a id="download-link" class="download-btn">Download file</a>
+    </div>
+
+  </section>
+
+  <div class="footer">
+    © 2026 Asheesh.in · Privacy-first secure transfer
   </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="app.js"></script>
-  <script src="liquid-bg.js"></script>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
