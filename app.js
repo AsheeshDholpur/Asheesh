@@ -296,8 +296,8 @@ async function sendFile(file) {
       fileSize: file.size
     }));
 
-    const chunkSize = 128 * 1024; // stable chunk size
-    const MAX_BUFFER = 8 * 1024 * 1024; // 8MB buffer cap
+    const chunkSize = 256 * 1024; // stable chunk size
+    const MAX_BUFFER = 12 * 1024 * 1024; // 8MB buffer cap
 
     let offset = 0;
 
