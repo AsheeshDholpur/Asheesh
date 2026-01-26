@@ -12,9 +12,11 @@ let dataChannel;
 let receivedBuffers = [];
 let receivedSize = 0;
 let incomingFileInfo = null;
+let sendStartTime = 0;
 
 let currentRoom = null;
 let pendingCandidates = [];
+let transferActive = false;
 
 // ================= RTC CONFIG =================
 
@@ -78,9 +80,21 @@ function showDisconnect(type) {
 // ================= SEND =================
 
 document.getElementById("send-btn").onclick = async () => {
+  if (transferActive) {
+  alert("Transfer already in progress.");
+  return;
+}
+
+transferActive = true;
 
   const room = document.getElementById("send-room").value.trim();
   const file = document.getElementById("file-input").files[0];
+const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+
+if (file.size > MAX_FILE_SIZE) {
+  alert("File too large (Max 2GB allowed).");
+  return;
+}
 
   if (!room || !file) {
     alert("Room ID and file required.");
@@ -90,6 +104,9 @@ document.getElementById("send-btn").onclick = async () => {
   currentRoom = room;
 
   peerConnection = new RTCPeerConnection(config);
+  peerConnection.onconnectionstatechange = () => {
+  showStatus(`🔗 Connection: ${peerConnection.connectionState}`);
+};
 
   dataChannel = peerConnection.createDataChannel("file", {
     ordered: true,
@@ -139,6 +156,9 @@ document.getElementById("receive-btn").onclick = () => {
   currentRoom = room;
 
   peerConnection = new RTCPeerConnection(config);
+  peerConnection.onconnectionstatechange = () => {
+  showStatus(`🔗 Connection: ${peerConnection.connectionState}`);
+};
 
   peerConnection.ondatachannel = event => {
 
@@ -150,7 +170,12 @@ document.getElementById("receive-btn").onclick = () => {
 
         try {
 
-          incomingFileInfo = JSON.parse(e.data);
+          const meta = JSON.parse(e.data);
+
+if (!meta.fileName || !meta.fileSize) return;
+
+incomingFileInfo = meta;
+
           receivedBuffers = [];
           receivedSize = 0;
 
@@ -189,6 +214,10 @@ document.getElementById("receive-btn").onclick = () => {
         link.download = fileName;
         link.textContent = `⬇️ Download ${fileName}`;
         link.style.display = "block";
+        setTimeout(() => {
+  URL.revokeObjectURL(link.href);
+}, 60000);
+
 
         showStatus("✅ File received successfully.");
 
@@ -296,11 +325,13 @@ async function sendFile(file) {
       fileSize: file.size
     }));
 
-    const chunkSize = 256 * 1024; // stable chunk size
+    const chunkSize = navigator.connection?.downlink > 20
+  ? 256 * 1024
+  : 128 * 1024; // High Performance Auto Chunk Size
     const MAX_BUFFER = 12 * 1024 * 1024; // 8MB buffer cap
 
     let offset = 0;
-
+    sendStartTime = Date.now();
     showProgress("send", 0, "📤 Sending: 0%");
 
     while (offset < file.size) {
@@ -323,7 +354,14 @@ async function sendFile(file) {
 
       const percent = ((offset / file.size) * 100).toFixed(1);
 
-      showProgress("send", percent, `📤 Sending: ${percent}%`);
+      const elapsed = (Date.now() - sendStartTime) / 1000;
+const speedMbps = ((offset * 8) / elapsed / 1e6).toFixed(1);
+
+showProgress(
+  "send",
+  percent,
+  `📤 ${percent}% • ${speedMbps} Mbps`
+);
     }
 
     while (dataChannel.bufferedAmount > 0) {
@@ -344,9 +382,13 @@ async function sendFile(file) {
     showDisconnect("send");
 
   } finally {
-
+transferActive = false;
     document.getElementById("file-input").value = "";
     hideProgress("send");
 
   }
 }
+window.addEventListener("beforeunload", () => {
+  if (peerConnection) peerConnection.close();
+  socket.disconnect();
+});
