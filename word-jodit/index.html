@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DOCX → Semantic Blog HTML Converter</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOCX → Semantic Blog HTML (Hybrid Engine)</title>
 
 <style>
 body {
@@ -23,25 +23,15 @@ h1 {
   margin-bottom: 20px;
 }
 
-.upload-box {
+.upload-box, .preview {
   background: white;
   padding: 20px;
   border-radius: 8px;
   border: 1px solid #ddd;
-}
-
-.preview {
-  margin-top: 30px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  min-height: 300px;
-  overflow: auto;
+  margin-bottom: 20px;
 }
 
 button {
-  margin-top: 15px;
   padding: 10px 16px;
   border-radius: 6px;
   border: none;
@@ -63,11 +53,11 @@ button {
 <body>
 
 <div class="container">
-  <h1>DOCX → Clean Semantic Blog HTML</h1>
+  <h1>DOCX → Clean Semantic Blog HTML (Hybrid)</h1>
 
   <div class="upload-box">
-    <input type="file" id="docxFile" accept=".docx" />
-    <br/>
+    <input type="file" id="docxFile" accept=".docx">
+    <br><br>
     <button class="convert-btn" onclick="convertDocx()">Convert</button>
   </div>
 
@@ -75,27 +65,29 @@ button {
   <button class="copy-btn" onclick="copyOutput()">Copy Clean HTML</button>
 </div>
 
-<!-- Mammoth CDN -->
 <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
 <script>
+
 let CLEAN_OUTPUT = "";
 
-/* ==========================
+/* ==============================
    MAIN CONVERSION
-========================== */
+============================== */
 
 function convertDocx() {
+
   const fileInput = document.getElementById("docxFile");
+
   if (!fileInput.files.length) {
     alert("Please upload a .docx file.");
     return;
   }
 
-  const file = fileInput.files[0];
   const reader = new FileReader();
 
   reader.onload = function(event) {
+
     const arrayBuffer = event.target.result;
 
     mammoth.convertToHtml(
@@ -110,77 +102,89 @@ function convertDocx() {
       }
     ).then(result => {
 
-      const validation = validateStructure(result.value);
+      let html = result.value;
 
-      if (!validation.valid) {
-        document.getElementById("preview").innerHTML =
-          "<strong style='color:red'>Document Rejected:</strong><br><br>" +
-          validation.errors.join("<br>");
-        CLEAN_OUTPUT = "";
-        return;
-      }
+      html = promoteBoldHeadings(html);
+      html = sanitizeHTML(html);
 
-      const cleanHTML = sanitizeHTML(result.value);
-      CLEAN_OUTPUT = cleanHTML;
-      document.getElementById("preview").innerHTML = cleanHTML;
+      CLEAN_OUTPUT = html;
+      document.getElementById("preview").innerHTML = html;
 
     }).catch(err => {
       console.error(err);
       alert("Conversion failed.");
     });
+
   };
 
-  reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(fileInput.files[0]);
 }
 
-  function validateStructure(html) {
+
+/* ==============================
+   HYBRID HEADING PROMOTION
+============================== */
+
+function promoteBoldHeadings(html) {
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
-  const errors = [];
-  const headings = doc.querySelectorAll("h2, h3, h4");
-
-  if (headings.length === 0) {
-    errors.push("No headings detected. Use Word Heading styles.");
-  }
-
-  let lastLevel = 2;
-
-  headings.forEach(h => {
-    const level = parseInt(h.tagName.replace("h",""));
-
-    if (level - lastLevel > 1) {
-      errors.push("Heading hierarchy skipped level near: " + h.textContent);
-    }
-
-    lastLevel = level;
-
-    if (!h.textContent.trim()) {
-      errors.push("Empty heading detected.");
-    }
-  });
-
-  // Detect fake bold headings
   const paragraphs = doc.querySelectorAll("p");
 
+  let firstH2Exists = !!doc.querySelector("h2");
+
   paragraphs.forEach(p => {
-    const strong = p.querySelector("strong");
-    if (strong && strong.textContent.length < 100 && p.textContent === strong.textContent) {
-      errors.push("Bold-only paragraph detected (not styled as heading): " + strong.textContent);
+
+    if (shouldPromote(p)) {
+
+      let newHeading;
+
+      if (!firstH2Exists) {
+        newHeading = document.createElement("h2");
+        firstH2Exists = true;
+      } else {
+        newHeading = document.createElement("h3");
+      }
+
+      newHeading.innerHTML = p.innerHTML;
+      p.replaceWith(newHeading);
     }
+
   });
 
-  return {
-    valid: errors.length === 0,
-    errors
-  };
+  return doc.body.innerHTML;
 }
 
 
-/* ==========================
-   SANITIZER
-========================== */
+/* ==============================
+   PROMOTION RULES
+============================== */
+
+function shouldPromote(p) {
+
+  const text = p.textContent.trim();
+
+  if (!text) return false;
+  if (text.length > 120) return false;
+  if (text.endsWith(".")) return false;
+  if (text.includes("\n")) return false;
+
+  if (p.closest("li, table, blockquote")) return false;
+
+  const strongTags = p.querySelectorAll("strong");
+
+  if (strongTags.length !== 1) return false;
+
+  if (strongTags[0].textContent.trim() !== text) return false;
+
+  return true;
+}
+
+
+/* ==============================
+   SANITIZER (STRICT WHITELIST)
+============================== */
 
 function sanitizeHTML(html) {
 
@@ -235,15 +239,17 @@ function sanitizeHTML(html) {
   return cleanContainer.innerHTML;
 }
 
-/* ==========================
+
+/* ==============================
    COPY OUTPUT
-========================== */
+============================== */
 
 function copyOutput() {
   if (!CLEAN_OUTPUT) return;
   navigator.clipboard.writeText(CLEAN_OUTPUT);
   alert("Clean HTML copied.");
 }
+
 </script>
 
 </body>
