@@ -99,6 +99,18 @@ function convertDocx() {
     const arrayBuffer = event.target.result;
 
     mammoth.convertToHtml(
+  { arrayBuffer: arrayBuffer },
+  {
+    includeDefaultStyleMap: true
+  }
+).then(result => {
+
+  console.log("MESSAGES:", result.messages);
+  console.log("RAW HTML:", result.value);
+
+});
+
+    mammoth.convertToHtml(
       { arrayBuffer: arrayBuffer },
       {
         styleMap: [
