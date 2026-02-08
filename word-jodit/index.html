@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DOCX → Semantic Blog HTML Converter</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f5f7fa;
+  padding: 40px;
+  margin: 0;
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.upload-box {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.preview {
+  margin-top: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  min-height: 300px;
+  overflow: auto;
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.convert-btn {
+  background: #111;
+  color: white;
+}
+
+.copy-btn {
+  background: #0d6efd;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>DOCX → Clean Semantic Blog HTML</h1>
+
+  <div class="upload-box">
+    <input type="file" id="docxFile" accept=".docx" />
+    <br/>
+    <button class="convert-btn" onclick="convertDocx()">Convert</button>
+  </div>
+
+  <div class="preview" id="preview"></div>
+  <button class="copy-btn" onclick="copyOutput()">Copy Clean HTML</button>
+</div>
+
+<!-- Mammoth CDN -->
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+<script>
+let CLEAN_OUTPUT = "";
+
+/* ==========================
+   MAIN CONVERSION
+========================== */
+
+function convertDocx() {
+  const fileInput = document.getElementById("docxFile");
+  if (!fileInput.files.length) {
+    alert("Please upload a .docx file.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    const arrayBuffer = event.target.result;
+
+    mammoth.convertToHtml(
+      { arrayBuffer: arrayBuffer },
+      {
+        styleMap: [
+          "p[style-name='Heading 1'] => h2:fresh",
+          "p[style-name='Heading 2'] => h3:fresh",
+          "p[style-name='Heading 3'] => h4:fresh"
+        ]
+      }
+    ).then(result => {
+
+      const cleanHTML = sanitizeHTML(result.value);
+      CLEAN_OUTPUT = cleanHTML;
+
+      document.getElementById("preview").innerHTML = cleanHTML;
+
+    }).catch(err => {
+      console.error(err);
+      alert("Conversion failed.");
+    });
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+/* ==========================
+   SANITIZER
+========================== */
+
+function sanitizeHTML(html) {
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const allowedTags = [
+    "h2","h3","h4",
+    "p","ul","ol","li",
+    "strong","em","u",
+    "blockquote",
+    "table","thead","tbody",
+    "tr","td","th","br"
+  ];
+
+  function cleanNode(node) {
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      return document.createTextNode(node.textContent);
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+
+    const tag = node.tagName.toLowerCase();
+
+    if (!allowedTags.includes(tag)) {
+      const fragment = document.createDocumentFragment();
+      node.childNodes.forEach(child => {
+        const cleaned = cleanNode(child);
+        if (cleaned) fragment.appendChild(cleaned);
+      });
+      return fragment;
+    }
+
+    const el = document.createElement(tag);
+
+    node.childNodes.forEach(child => {
+      const cleaned = cleanNode(child);
+      if (cleaned) el.appendChild(cleaned);
+    });
+
+    return el;
+  }
+
+  const cleanContainer = document.createElement("div");
+
+  doc.body.childNodes.forEach(node => {
+    const cleaned = cleanNode(node);
+    if (cleaned) cleanContainer.appendChild(cleaned);
+  });
+
+  return cleanContainer.innerHTML;
+}
+
+/* ==========================
+   COPY OUTPUT
+========================== */
+
+function copyOutput() {
+  if (!CLEAN_OUTPUT) return;
+  navigator.clipboard.writeText(CLEAN_OUTPUT);
+  alert("Clean HTML copied.");
+}
+</script>
+
+</body>
+</html>
