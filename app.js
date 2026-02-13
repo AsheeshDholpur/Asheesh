@@ -326,9 +326,9 @@ async function sendFile(file) {
     }));
 
     const chunkSize = navigator.connection?.downlink > 20
-  ? 256 * 1024
-  : 128 * 1024; // High Performance Auto Chunk Size
-    const MAX_BUFFER = 12 * 1024 * 1024; // 8MB buffer cap
+  ? 512 * 1024
+  : 256 * 1024; // High Performance Auto Chunk Size
+    const MAX_BUFFER = 16 * 1024 * 1024; // 16MB buffer cap
 
     let offset = 0;
     sendStartTime = Date.now();
