@@ -18,25 +18,14 @@ let currentRoom = null;
 let pendingCandidates = [];
 let transferActive = false;
 
-function waitForDataChannelOpen(channel) {
-  return new Promise((resolve, reject) => {
-    if (channel.readyState === "open") return resolve();
-    channel.onopen = () => resolve();
-    channel.onerror = (err) => reject(err);
-  });
-}
-
 // ================= RTC CONFIG =================
 
 const config = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ],
-  iceTransportPolicy: "all",
-  bundlePolicy: "max-bundle",
-  rtcpMuxPolicy: "require"
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:global.stun.twilio.com:3478" }
+  ]
 };
-
 
 // ================= UI HELPERS =================
 
@@ -120,37 +109,24 @@ if (file.size > MAX_FILE_SIZE) {
 };
 
   dataChannel = peerConnection.createDataChannel("file", {
-  ordered: true,
-  maxRetransmits: null
-});
+    ordered: true,
+    maxRetransmits: null
+  });
 
-// Increase internal buffer threshold
-dataChannel.bufferedAmountLowThreshold = 4 * 1024 * 1024; // 4MB
-
-
-  dataChannel.onopen = async () => {
-  try {
+  dataChannel.onopen = () => {
     showStatus("✅ Peer connected. Sending file...");
-    await waitForDataChannelOpen(dataChannel);
-    await sendFile(file);
-  } catch (err) {
-    console.error("DataChannel open failed:", err);
-    showDisconnect("send");
-    transferActive = false;
-  }
-};
+    sendFile(file);
+  };
 
   dataChannel.onclose = () => {
-  transferActive = false;
-  showStatus("✅ Transfer finished.");
-  hideProgress("send");
-};
+    showStatus("✅ Transfer finished.");
+    hideProgress("send");
+  };
 
   dataChannel.onerror = err => {
-  console.error("DataChannel error:", err);
-  transferActive = false;
-  showDisconnect("send");
-};
+    console.error("DataChannel error:", err);
+    showDisconnect("send");
+  };
 
   peerConnection.onicecandidate = e => {
     if (e.candidate) {
@@ -349,8 +325,10 @@ async function sendFile(file) {
       fileSize: file.size
     }));
 
-    const chunkSize = 512 * 1024; // 512KB (much faster)
-const MAX_BUFFER = 32 * 1024 * 1024; // 32MB buffer window
+    const chunkSize = navigator.connection?.downlink > 20
+  ? 256 * 1024
+  : 128 * 1024; // High Performance Auto Chunk Size
+    const MAX_BUFFER = 12 * 1024 * 1024; // 8MB buffer cap
 
     let offset = 0;
     sendStartTime = Date.now();
@@ -363,11 +341,9 @@ const MAX_BUFFER = 32 * 1024 * 1024; // 32MB buffer window
         return;
       }
 
-      if (dataChannel.bufferedAmount > MAX_BUFFER) {
-  await new Promise(resolve => {
-    dataChannel.onbufferedamountlow = resolve;
-  });
-}
+      while (dataChannel.bufferedAmount > MAX_BUFFER) {
+        await new Promise(r => setTimeout(r, 40));
+      }
 
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
@@ -394,9 +370,11 @@ showProgress(
 
     showStatus("✅ File fully sent.");
 
-    if (dataChannel.readyState === "open") {
-  dataChannel.close();
-}
+    setTimeout(() => {
+      if (dataChannel.readyState === "open") {
+        dataChannel.close();
+      }
+    }, 800);
 
   } catch (err) {
 
