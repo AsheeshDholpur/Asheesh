@@ -342,7 +342,7 @@ async function sendFile(file) {
       }
 
       while (dataChannel.bufferedAmount > MAX_BUFFER) {
-        await new Promise(r => setTimeout(r, 40));
+        await new Promise(r => setTimeout(r, 30));
       }
 
       const slice = file.slice(offset, offset + chunkSize);
