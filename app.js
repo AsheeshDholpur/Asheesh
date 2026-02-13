@@ -112,6 +112,7 @@ if (file.size > MAX_FILE_SIZE) {
     ordered: true,
     maxRetransmits: null
   });
+  dataChannel.bufferedAmountLowThreshold = 4 * 1024 * 1024; // 4MB
 
   dataChannel.onopen = () => {
     showStatus("✅ Peer connected. Sending file...");
@@ -341,9 +342,11 @@ async function sendFile(file) {
         return;
       }
 
-      while (dataChannel.bufferedAmount > MAX_BUFFER) {
-        await new Promise(r => setTimeout(r, 30));
-      }
+      if (dataChannel.bufferedAmount > MAX_BUFFER) {
+  await new Promise((resolve) => {
+    dataChannel.onbufferedamountlow = resolve;
+  });
+}
 
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
