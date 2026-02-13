@@ -325,10 +325,9 @@ async function sendFile(file) {
       fileSize: file.size
     }));
 
-    const chunkSize = navigator.connection?.downlink > 20
-  ? 256 * 1024
-  : 128 * 1024; // High Performance Auto Chunk Size
-    const MAX_BUFFER = 12 * 1024 * 1024; // 8MB buffer cap
+    const chunkSize = 512 * 1024; // 512KB (safe & fast)
+
+    const MAX_BUFFER = 24 * 1024 * 1024; // 24MB (safe)
 
     let offset = 0;
     sendStartTime = Date.now();
@@ -341,9 +340,7 @@ async function sendFile(file) {
         return;
       }
 
-      while (dataChannel.bufferedAmount > MAX_BUFFER) {
-        await new Promise(r => setTimeout(r, 40));
-      }
+      await new Promise(r => setTimeout(r, 20));
 
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
