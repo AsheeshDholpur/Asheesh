@@ -18,6 +18,14 @@ let currentRoom = null;
 let pendingCandidates = [];
 let transferActive = false;
 
+function waitForDataChannelOpen(channel) {
+  return new Promise((resolve, reject) => {
+    if (channel.readyState === "open") return resolve();
+    channel.onopen = () => resolve();
+    channel.onerror = (err) => reject(err);
+  });
+}
+
 // ================= RTC CONFIG =================
 
 const config = {
@@ -120,20 +128,29 @@ if (file.size > MAX_FILE_SIZE) {
 dataChannel.bufferedAmountLowThreshold = 4 * 1024 * 1024; // 4MB
 
 
-  dataChannel.onopen = () => {
+  dataChannel.onopen = async () => {
+  try {
     showStatus("✅ Peer connected. Sending file...");
-    sendFile(file);
-  };
+    await waitForDataChannelOpen(dataChannel);
+    await sendFile(file);
+  } catch (err) {
+    console.error("DataChannel open failed:", err);
+    showDisconnect("send");
+    transferActive = false;
+  }
+};
 
   dataChannel.onclose = () => {
-    showStatus("✅ Transfer finished.");
-    hideProgress("send");
-  };
+  transferActive = false;
+  showStatus("✅ Transfer finished.");
+  hideProgress("send");
+};
 
   dataChannel.onerror = err => {
-    console.error("DataChannel error:", err);
-    showDisconnect("send");
-  };
+  console.error("DataChannel error:", err);
+  transferActive = false;
+  showDisconnect("send");
+};
 
   peerConnection.onicecandidate = e => {
     if (e.candidate) {
@@ -377,11 +394,9 @@ showProgress(
 
     showStatus("✅ File fully sent.");
 
-    setTimeout(() => {
-      if (dataChannel.readyState === "open") {
-        dataChannel.close();
-      }
-    }, 800);
+    if (dataChannel.readyState === "open") {
+  dataChannel.close();
+}
 
   } catch (err) {
 
