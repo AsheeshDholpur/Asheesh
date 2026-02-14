@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SHA-1 Research Tool</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background:#f4f4f4; }
+        textarea, input { width: 100%; margin: 10px 0; padding: 8px; }
+        button { padding: 10px 15px; margin: 5px 0; cursor: pointer; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align:left; }
+        th { background:#333; color:white; }
+        .valid { color: green; font-weight: bold; }
+        .invalid { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h2>🔐 SHA‑1 Research & Learning Tool</h2>
+
+<h3>1️⃣ Generate SHA‑1 from Text</h3>
+<textarea id="plainInput" rows="4" placeholder="Enter text (one per line)"></textarea>
+<button onclick="generateHashes()">Generate SHA‑1</button>
+
+<table id="resultTable">
+    <tr>
+        <th>Plaintext</th>
+        <th>SHA‑1 Hash</th>
+    </tr>
+</table>
+
+<button onclick="downloadCSV()">Download CSV</button>
+
+<hr>
+
+<h3>2️⃣ SHA‑1 Identifier</h3>
+<input type="text" id="hashCheck" placeholder="Enter hash to verify">
+<button onclick="checkHash()">Check Hash</button>
+<p id="hashResult"></p>
+
+<script>
+// SHA-1 Function (Browser Crypto API)
+async function sha1(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-1", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Generate Hashes
+async function generateHashes() {
+    const input = document.getElementById("plainInput").value;
+    const lines = input.split("\n");
+    const table = document.getElementById("resultTable");
+
+    table.innerHTML = `
+        <tr>
+            <th>Plaintext</th>
+            <th>SHA‑1 Hash</th>
+        </tr>
+    `;
+
+    for (let line of lines) {
+        if (line.trim() === "") continue;
+        const hash = await sha1(line.trim());
+        const row = table.insertRow();
+        row.insertCell(0).innerText = line.trim();
+        row.insertCell(1).innerText = hash;
+    }
+}
+
+// Download CSV
+function downloadCSV() {
+    const rows = document.querySelectorAll("table tr");
+    let csv = [];
+
+    rows.forEach(row => {
+        let cols = row.querySelectorAll("td, th");
+        let rowData = [];
+        cols.forEach(col => rowData.push(col.innerText));
+        csv.push(rowData.join(","));
+    });
+
+    const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "sha1_results.csv";
+    link.click();
+}
+
+// Hash Identifier
+function checkHash() {
+    const hash = document.getElementById("hashCheck").value.trim();
+    const result = document.getElementById("hashResult");
+
+    const sha1Regex = /^[a-fA-F0-9]{40}$/;
+
+    if (sha1Regex.test(hash)) {
+        result.innerHTML = "✅ Valid SHA‑1 format (40 hex characters)";
+        result.className = "valid";
+    } else {
+        result.innerHTML = "❌ Not a valid SHA‑1 hash";
+        result.className = "invalid";
+    }
+}
+</script>
+
+</body>
+</html>
