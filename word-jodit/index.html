@@ -1,256 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOCX → Semantic Blog HTML (Hybrid Engine)</title>
-
-<style>
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f5f7fa;
-  padding: 40px;
-  margin: 0;
-}
-
-.container {
-  max-width: 1100px;
-  margin: auto;
-}
-
-h1 {
-  font-size: 22px;
-  margin-bottom: 20px;
-}
-
-.upload-box, .preview {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.convert-btn {
-  background: #111;
-  color: white;
-}
-
-.copy-btn {
-  background: #0d6efd;
-  color: white;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Blog Content Pipeline v3</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --border: #e2e8f0; }
+        body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; padding: 2rem; background: var(--bg); color: #1e293b; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .box { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        h1 { grid-column: 1 / -1; font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: #0f172a; }
+        #dropzone { height: 500px; border: 2px dashed #cbd5e1; border-radius: 8px; margin-top: 12px; padding: 20px; outline: none; overflow-y: auto; color: #64748b; }
+        #dropzone:focus { border-color: var(--primary); background: #f1f5f9; }
+        .preview { width: 100%; height: 500px; margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-family: 'Fira Code', monospace; font-size: 13px; background: #0f172a; color: #e2e8f0; overflow-y: auto; white-space: pre-wrap; box-sizing: border-box; }
+        .label { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
+    </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>DOCX → Clean Semantic Blog HTML (Hybrid)</h1>
+    <h1>Blog Pipeline: Word → Semantic HTML</h1>
 
-  <div class="upload-box">
-    <input type="file" id="docxFile" accept=".docx">
-    <br><br>
-    <button class="convert-btn" onclick="convertDocx()">Convert</button>
-  </div>
+    <div class="container">
+        <div class="box">
+            <div class="label">Paste Word Content Here</div>
+            <div id="dropzone" contenteditable="true">Ready for input...</div>
+        </div>
 
-  <div class="preview" id="preview"></div>
-  <button class="copy-btn" onclick="copyOutput()">Copy Clean HTML</button>
-</div>
+        <div class="box">
+            <div class="label">Cleaned Jodit-Ready HTML</div>
+            <div id="output" class="preview"></div>
+        </div>
+    </div>
 
-<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const output = document.getElementById('output');
 
-<script>
+        dropzone.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const html = e.clipboardData.getData('text/html');
+            if (html) {
+                const result = processWordHTML(html);
+                output.textContent = result;
+                dropzone.innerHTML = `<div style="color:green">✔ Content converted!</div>`;
+            }
+        });
 
-let CLEAN_OUTPUT = "";
+        function processWordHTML(rawHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawHtml, 'text/html');
+            
+            // Cleanup metadata and comments
+            const comments = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
+            while(comments.nextNode()) comments.currentNode.remove();
 
-/* ==============================
-   MAIN CONVERSION
-============================== */
+            return Array.from(doc.body.childNodes)
+                .map(node => transformNode(node))
+                .filter(item => item !== null && item !== '')
+                .join('\n');
+        }
 
-function convertDocx() {
+        function transformNode(node) {
+            // 1. Handle Text Nodes
+            if (node.nodeType === 3) {
+                const text = node.textContent.trim();
+                return text ? text : null;
+            }
 
-  const fileInput = document.getElementById("docxFile");
+            if (node.nodeType !== 1) return null;
 
-  if (!fileInput.files.length) {
-    alert("Please upload a .docx file.");
-    return;
-  }
+            const tag = node.tagName.toLowerCase();
+            const style = node.getAttribute('style') || '';
+            const fontSize = parseFloat(style.match(/font-size:\s?(\d+(\.\d+)?)pt/)?.[1] || 0) * 1.33;
+            const isBold = style.includes('font-weight:700') || style.includes('bold') || ['b', 'strong'].includes(tag);
 
-  const reader = new FileReader();
+            // 2. Heading Detection (Mapping Logic)
+            let targetTag = null;
+            
+            // Check Font Size rules first (High Priority)
+            if (isBold && fontSize >= 24) targetTag = 'h2';
+            else if (isBold && fontSize >= 19) targetTag = 'h3';
+            else if (isBold && fontSize >= 16) targetTag = 'h4';
+            // Check explicit tags (Fallback)
+            else if (tag === 'h1') targetTag = 'h2';
+            else if (tag === 'h2') targetTag = 'h2';
+            else if (tag === 'h3') targetTag = 'h3';
+            else if (tag === 'h4') targetTag = 'h4';
+            // Explicit paragraphs or blocks
+            else if (['p', 'blockquote', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th'].includes(tag)) {
+                targetTag = tag;
+            }
 
-  reader.onload = function(event) {
+            // 3. Process Block Elements
+            if (targetTag) {
+                const innerHTML = processInline(node);
+                if (!innerHTML.trim()) return null;
+                return `<${targetTag}>${innerHTML}</${targetTag}>`;
+            }
 
-    const arrayBuffer = event.target.result;
+            // 4. Handle BR
+            if (tag === 'br') return '<br />';
 
-    mammoth.convertToHtml(
-      { arrayBuffer: arrayBuffer },
-      {
-        styleMap: [
-          "p[style-name^='Heading 1'] => h2:fresh",
-          "p[style-name^='Heading 2'] => h3:fresh",
-          "p[style-name^='Heading 3'] => h4:fresh"
-        ],
-        includeDefaultStyleMap: true
-      }
-    ).then(result => {
+            // 5. Recursive pass-through for generic containers (div, span)
+            return Array.from(node.childNodes).map(transformNode).join('');
+        }
 
-      let html = result.value;
+        function processInline(parentNode) {
+            let html = '';
+            
+            parentNode.childNodes.forEach(node => {
+                if (node.nodeType === 3) {
+                    html += node.textContent;
+                } else if (node.nodeType === 1) {
+                    const tag = node.tagName.toLowerCase();
+                    const style = node.getAttribute('style') || '';
+                    
+                    let content = processInline(node);
+                    if (!content) return;
 
-      html = promoteBoldHeadings(html);
-      html = sanitizeHTML(html);
-
-      CLEAN_OUTPUT = html;
-      document.getElementById("preview").innerHTML = html;
-
-    }).catch(err => {
-      console.error(err);
-      alert("Conversion failed.");
-    });
-
-  };
-
-  reader.readAsArrayBuffer(fileInput.files[0]);
-}
-
-
-/* ==============================
-   HYBRID HEADING PROMOTION
-============================== */
-
-function promoteBoldHeadings(html) {
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-
-  const paragraphs = doc.querySelectorAll("p");
-
-  let firstH2Exists = !!doc.querySelector("h2");
-
-  paragraphs.forEach(p => {
-
-    if (shouldPromote(p)) {
-
-      let newHeading;
-
-      if (!firstH2Exists) {
-        newHeading = document.createElement("h2");
-        firstH2Exists = true;
-      } else {
-        newHeading = document.createElement("h3");
-      }
-
-      newHeading.innerHTML = p.innerHTML;
-      p.replaceWith(newHeading);
-    }
-
-  });
-
-  return doc.body.innerHTML;
-}
-
-
-/* ==============================
-   PROMOTION RULES
-============================== */
-
-function shouldPromote(p) {
-
-  const text = p.textContent.trim();
-
-  if (!text) return false;
-  if (text.length > 120) return false;
-  if (text.endsWith(".")) return false;
-  if (text.includes("\n")) return false;
-
-  if (p.closest("li, table, blockquote")) return false;
-
-  const strongTags = p.querySelectorAll("strong");
-
-  if (strongTags.length !== 1) return false;
-
-  if (strongTags[0].textContent.trim() !== text) return false;
-
-  return true;
-}
-
-
-/* ==============================
-   SANITIZER (STRICT WHITELIST)
-============================== */
-
-function sanitizeHTML(html) {
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-
-  const allowedTags = [
-    "h2","h3","h4",
-    "p","ul","ol","li",
-    "strong","em","u",
-    "blockquote",
-    "table","thead","tbody",
-    "tr","td","th","br"
-  ];
-
-  function cleanNode(node) {
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      return document.createTextNode(node.textContent);
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) return null;
-
-    const tag = node.tagName.toLowerCase();
-
-    if (!allowedTags.includes(tag)) {
-      const fragment = document.createDocumentFragment();
-      node.childNodes.forEach(child => {
-        const cleaned = cleanNode(child);
-        if (cleaned) fragment.appendChild(cleaned);
-      });
-      return fragment;
-    }
-
-    const el = document.createElement(tag);
-
-    node.childNodes.forEach(child => {
-      const cleaned = cleanNode(child);
-      if (cleaned) el.appendChild(cleaned);
-    });
-
-    return el;
-  }
-
-  const cleanContainer = document.createElement("div");
-
-  doc.body.childNodes.forEach(node => {
-    const cleaned = cleanNode(node);
-    if (cleaned) cleanContainer.appendChild(cleaned);
-  });
-
-  return cleanContainer.innerHTML;
-}
-
-
-/* ==============================
-   COPY OUTPUT
-============================== */
-
-function copyOutput() {
-  if (!CLEAN_OUTPUT) return;
-  navigator.clipboard.writeText(CLEAN_OUTPUT);
-  alert("Clean HTML copied.");
-}
-
-</script>
-
+                    // Apply Bold/Strong
+                    if (['strong', 'b'].includes(tag) || style.includes('font-weight:700') || style.includes('bold')) {
+                        content = `<strong>${content}</strong>`;
+                    }
+                    // Apply Italic/Em
+                    if (['em', 'i'].includes(tag) || style.includes('font-style:italic')) {
+                        content = `<em>${content}</em>`;
+                    }
+                    // Apply Underline
+                    if (['u'].includes(tag) || style.includes('text-decoration:underline')) {
+                        content = `<u>${content}</u>`;
+                    }
+                    
+                    // Specific tag handling
+                    if (tag === 'br') html += '<br />';
+                    else html += content;
+                }
+            });
+            
+            // Clean up redundant nested tags like <strong><strong></strong></strong>
+            return html.replace(/<strong><strong>/g, '<strong>').replace(/<\/strong><\/strong>/g, '</strong>');
+        }
+    </script>
 </body>
 </html>
