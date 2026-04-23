@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ASHEESH.IN — Secure File Transfer</title>
+
+  <!-- ============================================================
+       FIREBASE SDKs  (compat v9)
+       ============================================================ -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <!-- ============================================================
+       RAZORPAY  (load early so it's ready when user clicks)
+       ============================================================ -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0a0f1e;
+      --surface:  #111827;
+      --card:     #1a2236;
+      --border:   rgba(255,255,255,0.08);
+      --accent:   #4f8ef7;
+      --accent2:  #7c3aed;
+      --text:     #e8eaf0;
+      --muted:    #6b7280;
+      --danger:   #ef4444;
+      --success:  #22c55e;
+      --razorpay: #528ff0;
+      --radius:   10px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ─── NAV ───────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,15,30,0.9);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text);
+    }
+    .logo span { color: var(--accent); }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .user-chip {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem 0.3rem 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .user-chip.show { display: flex; }
+    .avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: #fff;
+    }
+
+    /* ─── BUTTONS ───────────────────────────────────────────────── */
+    .btn {
+      padding: 0.5rem 1.1rem;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #3b7de8; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.3);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.7rem;
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.08); }
+    .btn-full { width: 100%; padding: 0.75rem; font-size: 0.9rem; border-radius: var(--radius); }
+    .btn-google {
+      width: 100%;
+      padding: 0.65rem;
+      border-radius: var(--radius);
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      transition: border-color 0.18s;
+    }
+    .btn-google:hover { border-color: rgba(255,255,255,0.2); }
+    .btn-razorpay {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius);
+      background: var(--razorpay);
+      color: #fff;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      transition: opacity 0.18s;
+    }
+    .btn-razorpay:hover { opacity: 0.88; }
+
+    /* ─── HERO ──────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 4rem 1.5rem 2.5rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(79,142,247,0.12);
+      border: 1px solid rgba(79,142,247,0.25);
+      border-radius: 20px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.04em;
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { color: var(--muted); font-size: 1rem; max-width: 440px; margin: 0 auto 1.5rem; }
+    .trust-row {
+      display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap;
+      font-size: 0.78rem; color: var(--muted);
+    }
+    .trust-row span { display: flex; align-items: center; gap: 0.3rem; }
+
+    /* ─── GATE BANNER (shown when logged out) ───────────────────── */
+    #gateBanner {
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      background: rgba(79,142,247,0.07);
+      border: 1px solid rgba(79,142,247,0.2);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    #gateBanner p { font-size: 0.88rem; color: var(--muted); }
+    #gateBanner p strong { color: var(--text); display: block; margin-bottom: 0.2rem; }
+
+    /* ─── MAIN TRANSFER SECTION ─────────────────────────────────── */
+    .transfer-section {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+    .transfer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 640px) { .transfer-grid { grid-template-columns: 1fr; } }
+
+    /* ─── CARDS ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      opacity: 0.6;
+    }
+    .card-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .card-icon.send { background: rgba(79,142,247,0.15); }
+    .card-icon.recv { background: rgba(124,58,237,0.15); }
+    .card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .card p { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.2rem; }
+
+    /* form elements inside cards */
+    .field-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+    .field {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 1rem;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .field:focus { border-color: var(--accent); }
+    .field-group { margin-bottom: 1rem; }
+
+    /* file input */
+    .file-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: border-color 0.18s, color 0.18s;
+    }
+    .file-label:hover { border-color: var(--accent); color: var(--accent); }
+    input[type="file"] { display: none; }
+    #selectedFile {
+      font-size: 0.78rem;
+      color: var(--success);
+      margin-bottom: 0.8rem;
+      min-height: 1rem;
+    }
+
+    /* status */
+    .status {
+      font-size: 0.78rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: 6px;
+      margin-top: 0.8rem;
+      display: none;
+    }
+    .status.info { background: rgba(79,142,247,0.1); color: var(--accent); display: block; }
+    .status.success { background: rgba(34,197,94,0.1); color: var(--success); display: block; }
+    .status.error { background: rgba(239,68,68,0.1); color: var(--danger); display: block; }
+
+    /* ─── BLURRED OVERLAY on cards when logged out ──────────────── */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,15,30,0.72);
+      backdrop-filter: blur(6px);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      z-index: 10;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .card-overlay span { font-size: 0.85rem; color: var(--muted); }
+    .lock-icon { font-size: 1.6rem; }
+
+    /* ─── PAYMENT CARD ──────────────────────────────────────────── */
+    .pay-section {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+    .section-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .section-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .pay-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 640px) { .pay-grid { grid-template-columns: 1fr; } }
+    .pay-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .pay-card.featured { border-color: rgba(79,142,247,0.4); }
+    .pay-card.featured::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .plan-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.8rem;
+    }
+    .plan-badge.free { background: rgba(107,114,128,0.2); color: var(--muted); }
+    .plan-badge.pro { background: rgba(79,142,247,0.15); color: var(--accent); }
+    .pay-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .pay-amount {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+      letter-spacing: -0.03em;
+    }
+    .pay-amount sup { font-size: 1rem; vertical-align: super; font-weight: 600; }
+    .pay-period { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.2rem; }
+    .pay-features {
+      list-style: none;
+      margin-bottom: 1.4rem;
+    }
+    .pay-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .pay-features li:last-child { border-bottom: none; }
+    .pay-features li .tick { color: var(--success); flex-shrink: 0; margin-top: 1px; }
+    .pay-features li .cross { color: var(--muted); flex-shrink: 0; margin-top: 1px; opacity: 0.4; }
+    #payMsg { font-size: 0.8rem; margin-top: 0.8rem; }
+
+    /* ─── AUTH MODAL ────────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      margin: 1rem;
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none;
+      color: var(--muted); font-size: 1.2rem; cursor: pointer;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .modal .sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+
+    /* tabs */
+    .tab-row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.4rem;
+    }
+    .tab {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: all 0.18s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* form */
+    .f-group { margin-bottom: 1rem; }
+    .f-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
+    .f-group input {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .f-group input:focus { border-color: var(--accent); }
+    .divider {
+      display: flex; align-items: center; gap: 0.8rem;
+      font-size: 0.75rem; color: var(--muted);
+      margin: 1rem 0;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .modal-msg {
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 0.8rem;
+      display: none;
+    }
+    .modal-msg.err { background: rgba(239,68,68,0.1); color: var(--danger); display: block; border: 1px solid rgba(239,68,68,0.2); }
+    .modal-msg.ok { background: rgba(34,197,94,0.1); color: var(--success); display: block; border: 1px solid rgba(34,197,94,0.2); }
+    .modal-msg.info { background: rgba(79,142,247,0.1); color: var(--accent); display: block; border: 1px solid rgba(79,142,247,0.2); }
+
+    /* spinner */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── FOOTER ────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NAV
+═══════════════════════════════════════════════════════════════ -->
+<nav>
+  <div class="logo">ASHEESH<span>.IN</span></div>
+  <div class="nav-right">
+    <!-- shown when logged in -->
+    <div class="user-chip" id="userChip">
+      <div class="avatar" id="userAvatar">A</div>
+      <span id="userEmail">user</span>
+    </div>
+    <button class="btn btn-danger" id="btnSignOut" style="display:none" onclick="signOut()">Sign out</button>
+
+    <!-- shown when logged out -->
+    <button class="btn btn-ghost" id="btnLogin" onclick="openModal('login')">Log in</button>
+    <button class="btn btn-primary" id="btnSignup" onclick="openModal('signup')">Sign up</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-badge">🔒 End-to-end encrypted · WebRTC P2P</div>
+  <h1>Secure File<br><span>Transfer</span></h1>
+  <p>Private, end-to-end encrypted file transfer. No servers. No storage. No tracking.</p>
+  <div class="trust-row">
+    <span>✦ Zero server storage</span>
+    <span>✦ Direct peer-to-peer</span>
+    <span>✦ AES encrypted</span>
+  </div>
+</div>
+
+<!-- ─── GATE BANNER (logged out only) ──────────────────────────── -->
+<div id="gateBanner">
+  <p>
+    <strong>Account required to transfer files</strong>
+    Sign in or create a free account to start sending and receiving securely.
+  </p>
+  <button class="btn btn-primary" onclick="openModal('signup')">Get started — free</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FILE TRANSFER CARDS
+═══════════════════════════════════════════════════════════════ -->
+<div class="transfer-section">
+  <div class="transfer-grid">
+
+    <!-- SEND CARD -->
+    <div class="card" style="position:relative">
+      <!-- overlay when logged out -->
+      <div class="card-overlay" id="sendOverlay" onclick="openModal('signup')">
+        <div class="lock-icon">🔒</div>
+        <span>Sign in to send files</span>
+      </div>
+      <div class="card-icon send">📤</div>
+      <h2>Send File</h2>
+      <p>Share your Room ID with the receiver, then send your file securely.</p>
+
+      <div class="field-label">Room ID</div>
+      <input class="field" id="sendRoomId" placeholder="e.g. secure-abc-123" readonly
+             onfocus="this.removeAttribute('readonly')" />
+
+      <div class="field-group">
+        <label class="file-label" for="fileInput">
+          📎 Click to select file
+        </label>
+        <input type="file" id="fileInput" onchange="onFileSelect(this)" />
+        <div id="selectedFile"></div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="sendFile()">Send securely →</button>
+      <div class="status" id="sendStatus"></div>
+    </div>
+
+    <!-- RECEIVE CARD -->
+    <div class="card" style="position:relative">
+      <div class="card-overlay" id="recvOverlay" onclick="openModal('signup')">
+        <div class="lock-icon">🔒</div>
+        <span>Sign in to receive files</span>
+      </div>
+      <div class="card-icon recv">📥</div>
+      <h2>Receive File</h2>
+      <p>Enter the Room ID shared by the sender to connect and download.</p>
+
+      <div class="field-label">Room ID</div>
+      <input class="field" id="recvRoomId" placeholder="Enter Room ID from sender" />
+
+      <button class="btn btn-primary btn-full" onclick="connectRoom()" style="margin-bottom:0.8rem">
+        Connect &amp; receive
+      </button>
+      <button class="btn btn-ghost btn-full" id="btnDownload" style="display:none" onclick="downloadFile()">
+        ⬇ Download file
+      </button>
+      <div class="status" id="recvStatus"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAYMENT / PLANS
+═══════════════════════════════════════════════════════════════ -->
+<div class="pay-section">
+  <div class="section-heading">Upgrade plan</div>
+  <div class="pay-grid">
+
+    <!-- FREE -->
+    <div class="pay-card">
+      <div class="plan-badge free">Free</div>
+      <h3>Basic Transfer</h3>
+      <div class="pay-amount">₹<span>0</span></div>
+      <div class="pay-period">forever free</div>
+      <ul class="pay-features">
+        <li><span class="tick">✓</span> Up to 100 MB per file</li>
+        <li><span class="tick">✓</span> P2P encrypted transfer</li>
+        <li><span class="tick">✓</span> Unlimited transfers</li>
+        <li><span class="cross">✗</span> Transfer history</li>
+        <li><span class="cross">✗</span> Priority connection</li>
+      </ul>
+      <button class="btn btn-ghost btn-full" disabled style="cursor:default;opacity:0.5">Current plan</button>
+    </div>
+
+    <!-- PRO -->
+    <div class="pay-card featured">
+      <div class="plan-badge pro">⚡ Pro</div>
+      <h3>Pro Transfer</h3>
+      <div class="pay-amount"><sup>₹</sup>499</div>
+      <div class="pay-period">one-time · lifetime access</div>
+      <ul class="pay-features">
+        <li><span class="tick">✓</span> Up to 2 GB per file</li>
+        <li><span class="tick">✓</span> P2P encrypted transfer</li>
+        <li><span class="tick">✓</span> Unlimited transfers</li>
+        <li><span class="tick">✓</span> Transfer history log</li>
+        <li><span class="tick">✓</span> Priority TURN relay</li>
+      </ul>
+      <button class="btn-razorpay" onclick="handlePayment()">
+        Pay ₹499 via
+        <strong style="font-family:monospace;font-size:0.8rem;letter-spacing:0.02em">Razorpay</strong>
+      </button>
+      <div id="payMsg"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AUTH MODAL
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">Create account</h2>
+    <div class="sub" id="modalSub">Free forever. No credit card.</div>
+
+    <div class="tab-row">
+      <button class="tab active" id="tabSignup" onclick="switchTab('signup')">Sign up</button>
+      <button class="tab" id="tabLogin" onclick="switchTab('login')">Log in</button>
+    </div>
+
+    <div class="modal-msg" id="modalMsg"></div>
+
+    <!-- SIGNUP FORM -->
+    <div id="formSignup">
+      <div class="f-group">
+        <label>Full name</label>
+        <input type="text" id="suName" placeholder="Asheesh Sharma" autocomplete="name" />
+      </div>
+      <div class="f-group">
+        <label>Email</label>
+        <input type="email" id="suEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="f-group">
+        <label>Password</label>
+        <input type="password" id="suPass" placeholder="Min 6 characters" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doSignup()">Create free account</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="formLogin" style="display:none">
+      <div class="f-group">
+        <label>Email</label>
+        <input type="email" id="liEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="f-group">
+        <label>Password</label>
+        <input type="password" id="liPass" placeholder="Your password" autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Log in</button>
+    </div>
+
+    <div class="divider">or</div>
+    <button class="btn-google" onclick="doGoogle()">
+      <!-- Google G logo -->
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Continue with Google
+    </button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.72rem;color:var(--muted)">
+      🔒 Secured by Firebase Authentication
+    </p>
+  </div>
+</div>
+
+<footer>© 2026 Asheesh.in · Privacy-first secure transfer</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════════════ -->
+<script>
+/* ───────────────────────────────────────────────────────────────
+   ⚠  STEP 1: REPLACE this entire object with your real config
+   from Firebase Console → Project Settings → Your apps → SDK setup
+─────────────────────────────────────────────────────────────────*/
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDpJcK-Iw4g7v4Lk4U_W8BrlHqzNhKW4EY",
+  authDomain: "asheesh-in.firebaseapp.com",
+  projectId: "asheesh-in",
+  storageBucket: "asheesh-in.firebasestorage.app",
+  messagingSenderId: "779624277364",
+  appId: "1:779624277364:web:72f03112ddb71725aab821",
+  measurementId: "G-9ZQS50HZQQ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+/* ───────────────────────────────────────────────────────────────
+   ⚠  STEP 2: Replace with your Razorpay TEST key
+   from Razorpay Dashboard → Settings → API Keys
+   Format: rzp_test_XXXXXXXXXXXXXXXXXX
+─────────────────────────────────────────────────────────────────*/
+const RAZORPAY_KEY_ID = "rzp_test_SgtCXau28YMYC2";
+
+/* ───────────────────────────────────────────────────────────────
+   ⚠  STEP 3: Replace with your backend order-creation URL
+   Your server calls Razorpay API and returns { order_id }
+   (see README section in this file for the backend snippet)
+─────────────────────────────────────────────────────────────────*/
+const BACKEND_ORDER_URL = "https://asheesh-backend.vercel.app/api/create-order";
+
+/* ─── FIREBASE INIT ──────────────────────────────────────────── */
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+/* ─── AUTH STATE LISTENER ────────────────────────────────────── */
+auth.onAuthStateChanged(user => {
+  if (user) {
+    onLogin(user);
+  } else {
+    onLogout();
+  }
+});
+
+function onLogin(user) {
+  // nav
+  document.getElementById('userChip').classList.add('show');
+  document.getElementById('userAvatar').textContent =
+    (user.displayName || user.email || 'U')[0].toUpperCase();
+  document.getElementById('userEmail').textContent =
+    user.displayName || user.email.split('@')[0];
+  document.getElementById('btnSignOut').style.display = 'inline-block';
+  document.getElementById('btnLogin').style.display  = 'none';
+  document.getElementById('btnSignup').style.display = 'none';
+  // gate
+  document.getElementById('gateBanner').style.display  = 'none';
+  document.getElementById('sendOverlay').style.display = 'none';
+  document.getElementById('recvOverlay').style.display = 'none';
+}
+
+function onLogout() {
+  document.getElementById('userChip').classList.remove('show');
+  document.getElementById('btnSignOut').style.display = 'none';
+  document.getElementById('btnLogin').style.display   = 'inline-block';
+  document.getElementById('btnSignup').style.display  = 'inline-block';
+  document.getElementById('gateBanner').style.display = 'flex';
+  document.getElementById('sendOverlay').style.display = 'flex';
+  document.getElementById('recvOverlay').style.display = 'flex';
+}
+
+function signOut() {
+  auth.signOut();
+}
+
+/* ─── MODAL HELPERS ──────────────────────────────────────────── */
+function openModal(tab) {
+  document.getElementById('authModal').classList.add('open');
+  switchTab(tab);
+  clearMsg();
+}
+function closeModal() {
+  document.getElementById('authModal').classList.remove('open');
+  clearMsg();
+}
+function switchTab(t) {
+  document.getElementById('formSignup').style.display = t === 'signup' ? 'block' : 'none';
+  document.getElementById('formLogin').style.display  = t === 'login'  ? 'block' : 'none';
+  document.getElementById('tabSignup').className = 'tab' + (t === 'signup' ? ' active' : '');
+  document.getElementById('tabLogin').className  = 'tab' + (t === 'login'  ? ' active' : '');
+  document.getElementById('modalTitle').textContent = t === 'signup' ? 'Create account' : 'Welcome back';
+  document.getElementById('modalSub').textContent   = t === 'signup' ? 'Free forever. No credit card.' : 'Log in to asheesh.in';
+  clearMsg();
+}
+function showMsg(text, type) {
+  const el = document.getElementById('modalMsg');
+  el.textContent = text;
+  el.className = 'modal-msg ' + type;
+}
+function clearMsg() {
+  const el = document.getElementById('modalMsg');
+  el.textContent = '';
+  el.className = 'modal-msg';
+}
+
+// close on backdrop click
+document.getElementById('authModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ─── SIGNUP ─────────────────────────────────────────────────── */
+async function doSignup() {
+  const name  = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass  = document.getElementById('suPass').value;
+  if (!name || !email || !pass) { showMsg('Please fill all fields', 'err'); return; }
+  if (pass.length < 6)          { showMsg('Password must be at least 6 characters', 'err'); return; }
+  showMsg('Creating account…', 'info');
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    closeModal();
+  } catch (e) {
+    showMsg(friendlyError(e.code), 'err');
+  }
+}
+
+/* ─── LOGIN ──────────────────────────────────────────────────── */
+async function doLogin() {
+  const email = document.getElementById('liEmail').value.trim();
+  const pass  = document.getElementById('liPass').value;
+  if (!email || !pass) { showMsg('Enter email and password', 'err'); return; }
+  showMsg('Logging in…', 'info');
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    closeModal();
+  } catch (e) {
+    showMsg(friendlyError(e.code), 'err');
+  }
+}
+
+/* ─── GOOGLE SIGN-IN ─────────────────────────────────────────── */
+async function doGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  showMsg('Opening Google…', 'info');
+  try {
+    await auth.signInWithPopup(provider);
+    closeModal();
+  } catch (e) {
+    showMsg(friendlyError(e.code), 'err');
+  }
+}
+
+function friendlyError(code) {
+  const map = {
+    'auth/email-already-in-use':    'This email is already registered. Try logging in.',
+    'auth/invalid-email':           'Invalid email address.',
+    'auth/weak-password':           'Password is too weak. Use at least 6 characters.',
+    'auth/user-not-found':          'No account found with this email.',
+    'auth/wrong-password':          'Incorrect password.',
+    'auth/popup-closed-by-user':    'Google sign-in was cancelled.',
+    'auth/network-request-failed':  'Network error. Check your connection.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+/* ─── FILE TRANSFER STUBS ────────────────────────────────────── */
+// Your existing WebRTC / PeerJS logic goes here.
+// These stubs keep the UI functional for now.
+
+function onFileSelect(input) {
+  const f = input.files[0];
+  document.getElementById('selectedFile').textContent = f ? `✓ ${f.name} (${formatBytes(f.size)})` : '';
+}
+
+function sendFile() {
+  const roomId = document.getElementById('sendRoomId').value.trim();
+  if (!roomId) { setStatus('sendStatus', 'Enter a Room ID first', 'error'); return; }
+  if (!document.getElementById('fileInput').files[0]) {
+    setStatus('sendStatus', 'Select a file first', 'error'); return;
+  }
+  setStatus('sendStatus', '⏳ Connecting to peer… (wire up your WebRTC logic here)', 'info');
+}
+
+function connectRoom() {
+  const roomId = document.getElementById('recvRoomId').value.trim();
+  if (!roomId) { setStatus('recvStatus', 'Enter a Room ID', 'error'); return; }
+  setStatus('recvStatus', '⏳ Waiting for sender… (wire up your WebRTC logic here)', 'info');
+  document.getElementById('btnDownload').style.display = 'block';
+}
+
+function downloadFile() {
+  setStatus('recvStatus', '⬇ Downloading… (connect your actual data channel here)', 'info');
+}
+
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+/* ─── RAZORPAY PAYMENT ───────────────────────────────────────── */
+async function handlePayment() {
+  const user = auth.currentUser;
+  if (!user) {
+    openModal('login');
+    return;
+  }
+
+  const payMsg = document.getElementById('payMsg');
+  payMsg.style.cssText = 'color:var(--accent);font-size:0.8rem;margin-top:0.8rem';
+  payMsg.textContent = '⏳ Preparing checkout…';
+
+  /*  ── PRODUCTION flow ────────────────────────────────────────
+      1. Call your backend to create a Razorpay order
+      2. Open the Razorpay checkout with the returned order_id
+      3. On success, verify the signature on your backend
+
+      const res = await fetch(BACKEND_ORDER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 49900, currency: 'INR' })
+      });
+      const { order_id } = await res.json();
+  ──────────────────────────────────────────────────────────── */
+
+
+   ── Razorpay checkout (uncomment when backend is ready) ──────
+  const options = {
+    key:         RAZORPAY_KEY_ID,
+    amount:      49900,          // ₹499 in paise
+    currency:    'INR',
+    name:        'Asheesh.in',
+    description: 'Pro Transfer — Lifetime',
+    order_id:    order_id,       // from backend
+    prefill: {
+      name:  user.displayName || '',
+      email: user.email || ''
+    },
+    theme: { color: '#4f8ef7' },
+    handler: function(response) {
+      // ⚠ ALWAYS verify razorpay_signature on your backend!
+      payMsg.textContent = '✓ Payment successful! Pro access activated.';
+      payMsg.style.color = 'var(--success)';
+    }
+  };
+  const rzp = new Razorpay(options);
+  rzp.open();
+  ──────────────────────────────────────────────────────────── 
+}
+</script>
+
+<!--
+═══════════════════════════════════════════════════════════════════
+ QUICK-START CHECKLIST
+═══════════════════════════════════════════════════════════════════
+
+ FIREBASE SETUP
+ ──────────────
+ 1. Go to console.firebase.google.com → New project
+ 2. Authentication → Sign-in method → Enable:
+    • Email/Password
+    • Google (set your support email)
+ 3. Project Settings → Your apps → Add web app → copy firebaseConfig
+ 4. Paste config into the firebaseConfig object at top of <script>
+ 5. Authentication → Settings → Authorized domains → add: asheesh.in
+
+ RAZORPAY SETUP
+ ──────────────
+ 1. razorpay.com → Dashboard → Settings → API Keys → Generate Test Keys
+ 2. Paste rzp_test_XXXX into RAZORPAY_KEY_ID at top of <script>
+ 3. Create a small backend (Vercel serverless / Render / Railway):
+
+    // Node.js Express backend snippet
+    const Razorpay = require('razorpay');
+    const rzp = new Razorpay({
+      key_id:     process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_SECRET   // ← NEVER in frontend
+    });
+    app.post('/api/create-order', async (req, res) => {
+      const order = await rzp.orders.create({
+        amount:   49900,    // paise
+        currency: 'INR',
+        receipt:  'receipt_' + Date.now()
+      });
+      res.json({ order_id: order.id });
+    });
+
+    // Verify payment (always do this before granting access)
+    app.post('/api/verify-payment', (req, res) => {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const crypto = require('crypto');
+      const expected = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET)
+                             .update(body).digest('hex');
+      if (expected === razorpay_signature) res.json({ verified: true });
+      else res.status(400).json({ verified: false });
+    });
+
+ 4. Deploy backend → set BACKEND_ORDER_URL in <script>
+ 5. Switch rzp_test_ → rzp_live_ when going live
+
+ GITHUB PAGES DEPLOY
+ ────────────────────
+ 1. Replace your existing index.html with this file
+ 2. git add index.html && git commit -m "Add Firebase auth + Razorpay"
+ 3. git push → GitHub Pages auto-deploys at asheesh.in
+
+═══════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
