@@ -1,23 +1,29 @@
 // api/create-order.js
-// ─────────────────────────────────────────────────────────────
-// Creates a Razorpay order server-side.
-// The KEY SECRET never leaves this file / your server.
-// ─────────────────────────────────────────────────────────────
-
 const Razorpay = require("razorpay");
 
 const rzp = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID,     // set in Vercel dashboard
-  key_secret: process.env.RAZORPAY_SECRET,     // set in Vercel dashboard
+  key_id:     process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET,
 });
 
+// Allow both asheesh.in and www.asheesh.in
+const ALLOWED_ORIGINS = [
+  "https://asheesh.in",
+  "https://www.asheesh.in"
+];
+
 module.exports = async function handler(req, res) {
-  // ── CORS headers (allow your domain only) ──────────────────
-  res.setHeader("Access-Control-Allow-Origin",  "https://www.asheesh.in");
+  const origin = req.headers.origin;
+
+  // Set CORS for whichever variant the browser sends
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Vary", "Origin");
 
-  // Preflight
+  // Handle preflight
   if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method !== "POST") {
@@ -26,7 +32,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const order = await rzp.orders.create({
-      amount:   49900,          // ₹499 in paise  ← change if price changes
+      amount:   49900,        // ₹499 in paise
       currency: "INR",
       receipt:  "rcpt_" + Date.now(),
     });
