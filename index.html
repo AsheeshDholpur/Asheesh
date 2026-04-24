@@ -716,16 +716,8 @@
    ⚠  STEP 1: REPLACE this entire object with your real config
    from Firebase Console → Project Settings → Your apps → SDK setup
 ─────────────────────────────────────────────────────────────────*/
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDpJcK-REMOVED-SEE-FIREBASE-CONSOLE",
+  apiKey: "AIzaSyDpJcK-Iw4g7v4Lk4U_W8BrlHqzNhKW4EY",
   authDomain: "asheesh-in.firebaseapp.com",
   projectId: "asheesh-in",
   storageBucket: "asheesh-in.firebasestorage.app",
@@ -733,10 +725,6 @@ const firebaseConfig = {
   appId: "1:779624277364:web:72f03112ddb71725aab821",
   measurementId: "G-9ZQS50HZQQ"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
 /* ───────────────────────────────────────────────────────────────
    ⚠  STEP 2: Replace with your Razorpay TEST key
@@ -939,102 +927,40 @@ async function handlePayment() {
   payMsg.style.cssText = 'color:var(--accent);font-size:0.8rem;margin-top:0.8rem';
   payMsg.textContent = '⏳ Preparing checkout…';
 
-  /*  ── PRODUCTION flow ────────────────────────────────────────
-      1. Call your backend to create a Razorpay order
-      2. Open the Razorpay checkout with the returned order_id
-      3. On success, verify the signature on your backend
+  try {
+    const res = await fetch(BACKEND_ORDER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const { order_id } = await res.json();
 
-      const res = await fetch(BACKEND_ORDER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 49900, currency: 'INR' })
-      });
-      const { order_id } = await res.json();
-  ──────────────────────────────────────────────────────────── */
+    const options = {
+      key:         RAZORPAY_KEY_ID,
+      amount:      49900,
+      currency:    'INR',
+      name:        'Asheesh.in',
+      description: 'Pro Transfer — Lifetime',
+      order_id:    order_id,
+      prefill: {
+        name:  user.displayName || '',
+        email: user.email || ''
+      },
+      theme: { color: '#4f8ef7' },
+      handler: function(response) {
+        payMsg.textContent = '✓ Payment successful! Pro access activated.';
+        payMsg.style.color = 'var(--success)';
+      }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
 
-
-   ── Razorpay checkout (uncomment when backend is ready) ──────
-  const options = {
-    key:         RAZORPAY_KEY_ID,
-    amount:      49900,          // ₹499 in paise
-    currency:    'INR',
-    name:        'Asheesh.in',
-    description: 'Pro Transfer — Lifetime',
-    order_id:    order_id,       // from backend
-    prefill: {
-      name:  user.displayName || '',
-      email: user.email || ''
-    },
-    theme: { color: '#4f8ef7' },
-    handler: function(response) {
-      // ⚠ ALWAYS verify razorpay_signature on your backend!
-      payMsg.textContent = '✓ Payment successful! Pro access activated.';
-      payMsg.style.color = 'var(--success)';
-    }
-  };
-  const rzp = new Razorpay(options);
-  rzp.open();
-  ──────────────────────────────────────────────────────────── 
+  } catch (err) {
+    payMsg.textContent = '✗ Could not initiate payment. Try again.';
+    payMsg.style.color = 'var(--danger)';
+  }
 }
 </script>
 
-<!--
-═══════════════════════════════════════════════════════════════════
- QUICK-START CHECKLIST
-═══════════════════════════════════════════════════════════════════
 
- FIREBASE SETUP
- ──────────────
- 1. Go to console.firebase.google.com → New project
- 2. Authentication → Sign-in method → Enable:
-    • Email/Password
-    • Google (set your support email)
- 3. Project Settings → Your apps → Add web app → copy firebaseConfig
- 4. Paste config into the firebaseConfig object at top of <script>
- 5. Authentication → Settings → Authorized domains → add: asheesh.in
-
- RAZORPAY SETUP
- ──────────────
- 1. razorpay.com → Dashboard → Settings → API Keys → Generate Test Keys
- 2. Paste rzp_test_XXXX into RAZORPAY_KEY_ID at top of <script>
- 3. Create a small backend (Vercel serverless / Render / Railway):
-
-    // Node.js Express backend snippet
-    const Razorpay = require('razorpay');
-    const rzp = new Razorpay({
-      key_id:     process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_SECRET   // ← NEVER in frontend
-    });
-    app.post('/api/create-order', async (req, res) => {
-      const order = await rzp.orders.create({
-        amount:   49900,    // paise
-        currency: 'INR',
-        receipt:  'receipt_' + Date.now()
-      });
-      res.json({ order_id: order.id });
-    });
-
-    // Verify payment (always do this before granting access)
-    app.post('/api/verify-payment', (req, res) => {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-      const body = razorpay_order_id + '|' + razorpay_payment_id;
-      const crypto = require('crypto');
-      const expected = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET)
-                             .update(body).digest('hex');
-      if (expected === razorpay_signature) res.json({ verified: true });
-      else res.status(400).json({ verified: false });
-    });
-
- 4. Deploy backend → set BACKEND_ORDER_URL in <script>
- 5. Switch rzp_test_ → rzp_live_ when going live
-
- GITHUB PAGES DEPLOY
- ────────────────────
- 1. Replace your existing index.html with this file
- 2. git add index.html && git commit -m "Add Firebase auth + Razorpay"
- 3. git push → GitHub Pages auto-deploys at asheesh.in
-
-═══════════════════════════════════════════════════════════════════
--->
 </body>
 </html>
