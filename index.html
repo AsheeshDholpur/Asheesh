@@ -10,6 +10,7 @@
        ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <!-- ============================================================
        RAZORPAY  (load early so it's ready when user clicks)
@@ -743,6 +744,7 @@ const BACKEND_ORDER_URL = "https://asheesh-backend-v2.vercel.app/api/create-orde
 /* ─── FIREBASE INIT ──────────────────────────────────────────── */
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db   = firebase.firestore();
 
 /* ─── AUTH STATE LISTENER ────────────────────────────────────── */
 auth.onAuthStateChanged(user => {
@@ -767,6 +769,37 @@ function onLogin(user) {
   document.getElementById('gateBanner').style.display  = 'none';
   document.getElementById('sendOverlay').style.display = 'none';
   document.getElementById('recvOverlay').style.display = 'none';
+  // check Pro status from Firestore
+  checkProStatus(user.uid);
+}
+
+async function checkProStatus(uid) {
+  try {
+    const doc = await db.collection('users').doc(uid).get();
+    if (doc.exists && doc.data().isPro === true) {
+      activateProUI();
+    }
+  } catch (err) {
+    console.error('Could not fetch Pro status:', err);
+  }
+}
+
+function activateProUI() {
+  // Replace Pay button with Pro badge
+  const payCard = document.querySelector('.pay-card.featured');
+  if (!payCard) return;
+  const btn = payCard.querySelector('.btn-razorpay');
+  const msg = payCard.querySelector('#payMsg');
+  if (btn) {
+    btn.innerHTML = '⚡ Pro Member — Active';
+    btn.style.background = 'var(--success)';
+    btn.style.cursor = 'default';
+    btn.onclick = null;
+  }
+  if (msg) {
+    msg.style.cssText = 'color:var(--success);font-size:0.8rem;margin-top:0.8rem';
+    msg.textContent = '✓ Lifetime access activated on your account';
+  }
 }
 
 function onLogout() {
@@ -928,12 +961,14 @@ async function handlePayment() {
   payMsg.textContent = '⏳ Preparing checkout…';
 
   try {
+    // Step 1: Create order
     const res = await fetch(BACKEND_ORDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
     const { order_id } = await res.json();
 
+    // Step 2: Open Razorpay checkout
     const options = {
       key:         RAZORPAY_KEY_ID,
       amount:      49900,
@@ -946,9 +981,39 @@ async function handlePayment() {
         email: user.email || ''
       },
       theme: { color: '#4f8ef7' },
-      handler: function(response) {
-        payMsg.textContent = '✓ Payment successful! Pro access activated.';
-        payMsg.style.color = 'var(--success)';
+      handler: async function(response) {
+        payMsg.textContent = '⏳ Verifying payment…';
+        payMsg.style.color = 'var(--accent)';
+
+        // Step 3: Verify payment signature on backend + save Pro to Firestore
+        try {
+          const verifyRes = await fetch(
+            BACKEND_ORDER_URL.replace('create-order', 'verify-payment'),
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                uid: user.uid
+              })
+            }
+          );
+          const result = await verifyRes.json();
+
+          if (result.verified) {
+            payMsg.textContent = '✓ Payment verified! Pro access activated.';
+            payMsg.style.color = 'var(--success)';
+            activateProUI();
+          } else {
+            payMsg.textContent = '✗ Payment verification failed. Contact support.';
+            payMsg.style.color = 'var(--danger)';
+          }
+        } catch(e) {
+          payMsg.textContent = '✗ Verification error. Contact support.';
+          payMsg.style.color = 'var(--danger)';
+        }
       }
     };
     const rzp = new Razorpay(options);
