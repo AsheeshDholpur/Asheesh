@@ -5,16 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ASHEESH.IN — Secure File Transfer</title>
 
-  <!-- ============================================================
-       FIREBASE SDKs  (compat v9)
-       ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- ============================================================
-       RAZORPAY  (load early so it's ready when user clicks)
-       ============================================================ -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <style>
@@ -62,6 +56,20 @@
     }
     .logo span { color: var(--accent); }
     .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    
+    .pro-badge {
+      display: none; /* Hidden by default */
+      align-items: center;
+      background: rgba(124,58,237,0.15);
+      color: var(--accent2);
+      border: 1px solid rgba(124,58,237,0.3);
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
     .user-chip {
       display: none;
       align-items: center;
@@ -93,16 +101,9 @@
       transition: all 0.18s;
       font-family: inherit;
     }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
+    .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: #3b7de8; }
-    .btn-ghost {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
-    }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
     .btn-danger {
       background: transparent;
@@ -112,6 +113,8 @@
       padding: 0.3rem 0.7rem;
     }
     .btn-danger:hover { background: rgba(239,68,68,0.08); }
+    .btn-danger-solid { background: var(--danger); color: #fff; }
+    .btn-danger-solid:hover { background: #dc2626; }
     .btn-full { width: 100%; padding: 0.75rem; font-size: 0.9rem; border-radius: var(--radius); }
     .btn-google {
       width: 100%;
@@ -128,107 +131,53 @@
     }
     .btn-google:hover { border-color: rgba(255,255,255,0.2); }
     .btn-razorpay {
-      width: 100%;
-      padding: 0.75rem;
-      border-radius: var(--radius);
-      background: var(--razorpay);
-      color: #fff;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%; padding: 0.75rem; border-radius: var(--radius); background: var(--razorpay);
+      color: #fff; border: none; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
       transition: opacity 0.18s;
     }
     .btn-razorpay:hover { opacity: 0.88; }
 
     /* ─── HERO ──────────────────────────────────────────────────── */
-    .hero {
-      text-align: center;
-      padding: 4rem 1.5rem 2.5rem;
-      max-width: 640px;
-      margin: 0 auto;
-    }
+    .hero { text-align: center; padding: 4rem 1.5rem 2.5rem; max-width: 640px; margin: 0 auto; }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 0.4rem;
-      background: rgba(79,142,247,0.12);
-      border: 1px solid rgba(79,142,247,0.25);
-      border-radius: 20px;
-      padding: 0.3rem 0.9rem;
-      font-size: 0.75rem;
-      color: var(--accent);
-      margin-bottom: 1.5rem;
-      letter-spacing: 0.04em;
+      background: rgba(79,142,247,0.12); border: 1px solid rgba(79,142,247,0.25);
+      border-radius: 20px; padding: 0.3rem 0.9rem; font-size: 0.75rem; color: var(--accent);
+      margin-bottom: 1.5rem; letter-spacing: 0.04em;
     }
-    .hero h1 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
+    .hero h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1rem; }
     .hero h1 span { color: var(--accent); }
     .hero p { color: var(--muted); font-size: 1rem; max-width: 440px; margin: 0 auto 1.5rem; }
-    .trust-row {
-      display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap;
-      font-size: 0.78rem; color: var(--muted);
-    }
+    .trust-row { display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
     .trust-row span { display: flex; align-items: center; gap: 0.3rem; }
 
     /* ─── GATE BANNER (shown when logged out) ───────────────────── */
     #gateBanner {
-      max-width: 560px;
-      margin: 0 auto 2.5rem;
-      background: rgba(79,142,247,0.07);
-      border: 1px solid rgba(79,142,247,0.2);
-      border-radius: var(--radius);
-      padding: 1.2rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
+      max-width: 560px; margin: 0 auto 2.5rem; background: rgba(79,142,247,0.07);
+      border: 1px solid rgba(79,142,247,0.2); border-radius: var(--radius); padding: 1.2rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
     }
     #gateBanner p { font-size: 0.88rem; color: var(--muted); }
     #gateBanner p strong { color: var(--text); display: block; margin-bottom: 0.2rem; }
 
     /* ─── MAIN TRANSFER SECTION ─────────────────────────────────── */
-    .transfer-section {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 0 1.5rem 3rem;
-    }
-    .transfer-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-    }
+    .transfer-section { max-width: 820px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    .transfer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     @media (max-width: 640px) { .transfer-grid { grid-template-columns: 1fr; } }
 
     /* ─── CARDS ─────────────────────────────────────────────────── */
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      position: relative;
-      overflow: hidden;
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.5rem; position: relative; overflow: hidden;
     }
     .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      opacity: 0.6;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0.6;
     }
     .card-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
+      width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-size: 1.2rem; margin-bottom: 1rem;
     }
     .card-icon.send { background: rgba(79,142,247,0.15); }
     .card-icon.recv { background: rgba(124,58,237,0.15); }
@@ -237,192 +186,92 @@
 
     /* form elements inside cards */
     .field-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 0.4rem;
+      font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 0.4rem;
     }
     .field {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: 'Courier New', monospace;
-      margin-bottom: 1rem;
-      outline: none;
-      transition: border-color 0.18s;
+      width: 100%; padding: 0.6rem 0.8rem; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.9rem; font-family: 'Courier New', monospace;
+      margin-bottom: 1rem; outline: none; transition: border-color 0.18s;
     }
     .field:focus { border-color: var(--accent); }
     .field-group { margin-bottom: 1rem; }
 
     /* file input */
     .file-label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      border: 1.5px dashed var(--border);
-      border-radius: 8px;
-      padding: 1rem;
-      font-size: 0.82rem;
-      color: var(--muted);
-      cursor: pointer;
-      margin-bottom: 1rem;
-      transition: border-color 0.18s, color 0.18s;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      border: 1.5px dashed var(--border); border-radius: 8px; padding: 1rem; font-size: 0.82rem;
+      color: var(--muted); cursor: pointer; margin-bottom: 1rem; transition: border-color 0.18s, color 0.18s;
     }
     .file-label:hover { border-color: var(--accent); color: var(--accent); }
     input[type="file"] { display: none; }
-    #selectedFile {
-      font-size: 0.78rem;
-      color: var(--success);
-      margin-bottom: 0.8rem;
-      min-height: 1rem;
-    }
+    #selectedFile { font-size: 0.78rem; color: var(--success); margin-bottom: 0.8rem; min-height: 1rem; }
 
     /* status */
-    .status {
-      font-size: 0.78rem;
-      padding: 0.5rem 0.7rem;
-      border-radius: 6px;
-      margin-top: 0.8rem;
-      display: none;
-    }
+    .status { font-size: 0.78rem; padding: 0.5rem 0.7rem; border-radius: 6px; margin-top: 0.8rem; display: none; }
     .status.info { background: rgba(79,142,247,0.1); color: var(--accent); display: block; }
     .status.success { background: rgba(34,197,94,0.1); color: var(--success); display: block; }
     .status.error { background: rgba(239,68,68,0.1); color: var(--danger); display: block; }
 
     /* ─── BLURRED OVERLAY on cards when logged out ──────────────── */
     .card-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(10,15,30,0.72);
-      backdrop-filter: blur(6px);
-      border-radius: 14px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
-      z-index: 10;
-      cursor: pointer;
-      transition: opacity 0.2s;
+      position: absolute; inset: 0; background: rgba(10,15,30,0.72); backdrop-filter: blur(6px);
+      border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.6rem; z-index: 10; cursor: pointer; transition: opacity 0.2s;
     }
     .card-overlay span { font-size: 0.85rem; color: var(--muted); }
     .lock-icon { font-size: 1.6rem; }
 
     /* ─── PAYMENT CARD ──────────────────────────────────────────── */
-    .pay-section {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 0 1.5rem 4rem;
-    }
+    .pay-section { max-width: 820px; margin: 0 auto; padding: 0 1.5rem 4rem; transition: opacity 0.3s ease; }
     .section-heading {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;
     }
-    .section-heading::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .pay-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-    }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     @media (max-width: 640px) { .pay-grid { grid-template-columns: 1fr; } }
     .pay-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      position: relative;
-      overflow: hidden;
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.5rem; position: relative; overflow: hidden;
     }
     .pay-card.featured { border-color: rgba(79,142,247,0.4); }
     .pay-card.featured::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
       background: linear-gradient(90deg, var(--accent), var(--accent2));
     }
     .plan-badge {
-      display: inline-block;
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 0.2rem 0.6rem;
-      border-radius: 4px;
-      margin-bottom: 0.8rem;
+      display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.8rem;
     }
     .plan-badge.free { background: rgba(107,114,128,0.2); color: var(--muted); }
     .plan-badge.pro { background: rgba(79,142,247,0.15); color: var(--accent); }
     .pay-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-    .pay-amount {
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: 0.2rem;
-      letter-spacing: -0.03em;
-    }
+    .pay-amount { font-size: 2rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.03em; }
     .pay-amount sup { font-size: 1rem; vertical-align: super; font-weight: 600; }
     .pay-period { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.2rem; }
-    .pay-features {
-      list-style: none;
-      margin-bottom: 1.4rem;
-    }
+    .pay-features { list-style: none; margin-bottom: 1.4rem; }
     .pay-features li {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-      font-size: 0.82rem;
-      color: var(--muted);
-      padding: 0.3rem 0;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.82rem; color: var(--muted);
+      padding: 0.3rem 0; border-bottom: 1px solid var(--border);
     }
     .pay-features li:last-child { border-bottom: none; }
     .pay-features li .tick { color: var(--success); flex-shrink: 0; margin-top: 1px; }
     .pay-features li .cross { color: var(--muted); flex-shrink: 0; margin-top: 1px; opacity: 0.4; }
     #payMsg { font-size: 0.8rem; margin-top: 0.8rem; }
 
-    /* ─── AUTH MODAL ────────────────────────────────────────────── */
+    /* ─── MODALS ────────────────────────────────────────────── */
     .modal-backdrop {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center;
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 400px;
-      position: relative;
-      margin: 1rem;
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2rem; width: 100%; max-width: 400px; position: relative; margin: 1rem;
     }
     .modal-close {
-      position: absolute; top: 1rem; right: 1rem;
-      background: none; border: none;
+      position: absolute; top: 1rem; right: 1rem; background: none; border: none;
       color: var(--muted); font-size: 1.2rem; cursor: pointer;
     }
     .modal-close:hover { color: var(--text); }
@@ -430,22 +279,11 @@
     .modal .sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
 
     /* tabs */
-    .tab-row {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.4rem;
-    }
+    .tab-row { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.4rem; }
     .tab {
-      padding: 0.5rem 1rem;
-      font-size: 0.85rem;
-      font-family: inherit;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--muted);
-      cursor: pointer;
-      margin-bottom: -1px;
-      transition: all 0.18s;
+      padding: 0.5rem 0.8rem; font-size: 0.85rem; font-family: inherit; background: none; border: none;
+      border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; margin-bottom: -1px;
+      transition: all 0.18s; flex: 1; text-align: center;
     }
     .tab.active { color: var(--text); border-bottom-color: var(--accent); }
 
@@ -453,31 +291,16 @@
     .f-group { margin-bottom: 1rem; }
     .f-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
     .f-group input {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: inherit;
-      outline: none;
+      width: 100%; padding: 0.6rem 0.8rem; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.9rem; font-family: inherit; outline: none;
       transition: border-color 0.18s;
     }
     .f-group input:focus { border-color: var(--accent); }
     .divider {
-      display: flex; align-items: center; gap: 0.8rem;
-      font-size: 0.75rem; color: var(--muted);
-      margin: 1rem 0;
+      display: flex; align-items: center; gap: 0.8rem; font-size: 0.75rem; color: var(--muted); margin: 1rem 0;
     }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .modal-msg {
-      padding: 0.55rem 0.75rem;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      margin-bottom: 0.8rem;
-      display: none;
-    }
+    .modal-msg { padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 0.8rem; display: none; }
     .modal-msg.err { background: rgba(239,68,68,0.1); color: var(--danger); display: block; border: 1px solid rgba(239,68,68,0.2); }
     .modal-msg.ok { background: rgba(34,197,94,0.1); color: var(--success); display: block; border: 1px solid rgba(34,197,94,0.2); }
     .modal-msg.info { background: rgba(79,142,247,0.1); color: var(--accent); display: block; border: 1px solid rgba(79,142,247,0.2); }
@@ -486,111 +309,28 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ─── PRO BADGE (nav) ──────────────────────────────────────── */
-    .pro-badge {
-      display: none;
-      align-items: center;
-      gap: 0.4rem;
-      background: linear-gradient(135deg, rgba(79,142,247,0.15), rgba(124,58,237,0.15));
-      border: 1px solid rgba(79,142,247,0.35);
-      border-radius: 20px;
-      padding: 0.3rem 0.9rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--accent);
-    }
-    .pro-badge.show { display: flex; }
-
-    /* ─── PHONE INPUT ROW ───────────────────────────────────────── */
-    .phone-row { display: flex; gap: 0.5rem; }
-    .phone-row .country-code {
-      width: 80px;
-      padding: 0.6rem 0.5rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: inherit;
-      outline: none;
-      flex-shrink: 0;
-    }
-    .otp-row { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
-    .otp-row input { flex: 1; }
-    .otp-row button {
-      white-space: nowrap;
-      padding: 0.6rem 0.8rem;
-      font-size: 0.78rem;
-      border-radius: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      cursor: pointer;
-      font-family: inherit;
-      transition: border-color 0.18s;
-    }
-    .otp-row button:hover { border-color: var(--accent); }
-
-    /* ─── LOGOUT CONFIRM MODAL ──────────────────────────────────── */
-    .confirm-backdrop {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-      z-index: 300;
-      align-items: center;
-      justify-content: center;
-    }
-    .confirm-backdrop.open { display: flex; }
-    .confirm-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.8rem;
-      width: 100%;
-      max-width: 340px;
-      text-align: center;
-      margin: 1rem;
-    }
-    .confirm-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .confirm-box p  { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.4rem; }
-    .confirm-btns   { display: flex; gap: 0.8rem; justify-content: center; }
-
     /* ─── FOOTER ────────────────────────────────────────────────── */
-    footer {
-      text-align: center;
-      padding: 1.5rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-    }
+    footer { text-align: center; padding: 1.5rem; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); }
   </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     NAV
-═══════════════════════════════════════════════════════════════ -->
 <nav>
   <div class="logo">ASHEESH<span>.IN</span></div>
   <div class="nav-right">
-    <!-- shown when logged in -->
+    <div class="pro-badge" id="navProBadge">⚡ PRO</div>
+
     <div class="user-chip" id="userChip">
       <div class="avatar" id="userAvatar">A</div>
       <span id="userEmail">user</span>
     </div>
-    <div class="pro-badge" id="proBadge">⚡ Pro Member</div>
     <button class="btn btn-danger" id="btnSignOut" style="display:none" onclick="confirmSignOut()">Sign out</button>
 
-    <!-- shown when logged out -->
     <button class="btn btn-ghost" id="btnLogin" onclick="openModal('login')">Log in</button>
     <button class="btn btn-primary" id="btnSignup" onclick="openModal('signup')">Sign up</button>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     HERO
-═══════════════════════════════════════════════════════════════ -->
 <div class="hero">
   <div class="hero-badge">🔒 End-to-end encrypted · WebRTC P2P</div>
   <h1>Secure File<br><span>Transfer</span></h1>
@@ -602,7 +342,6 @@
   </div>
 </div>
 
-<!-- ─── GATE BANNER (logged out only) ──────────────────────────── -->
 <div id="gateBanner">
   <p>
     <strong>Account required to transfer files</strong>
@@ -611,15 +350,10 @@
   <button class="btn btn-primary" onclick="openModal('signup')">Get started — free</button>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     FILE TRANSFER CARDS
-═══════════════════════════════════════════════════════════════ -->
 <div class="transfer-section">
   <div class="transfer-grid">
 
-    <!-- SEND CARD -->
     <div class="card" style="position:relative">
-      <!-- overlay when logged out -->
       <div class="card-overlay" id="sendOverlay" onclick="openModal('signup')">
         <div class="lock-icon">🔒</div>
         <span>Sign in to send files</span>
@@ -644,7 +378,6 @@
       <div class="status" id="sendStatus"></div>
     </div>
 
-    <!-- RECEIVE CARD -->
     <div class="card" style="position:relative">
       <div class="card-overlay" id="recvOverlay" onclick="openModal('signup')">
         <div class="lock-icon">🔒</div>
@@ -669,14 +402,10 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     PAYMENT / PLANS
-═══════════════════════════════════════════════════════════════ -->
-<div class="pay-section">
+<div class="pay-section" id="paySection">
   <div class="section-heading">Upgrade plan</div>
   <div class="pay-grid">
 
-    <!-- FREE -->
     <div class="pay-card">
       <div class="plan-badge free">Free</div>
       <h3>Basic Transfer</h3>
@@ -692,7 +421,6 @@
       <button class="btn btn-ghost btn-full" disabled style="cursor:default;opacity:0.5">Current plan</button>
     </div>
 
-    <!-- PRO -->
     <div class="pay-card featured">
       <div class="plan-badge pro">⚡ Pro</div>
       <h3>Pro Transfer</h3>
@@ -705,7 +433,7 @@
         <li><span class="tick">✓</span> Transfer history log</li>
         <li><span class="tick">✓</span> Priority TURN relay</li>
       </ul>
-      <button class="btn-razorpay" onclick="handlePayment()">
+      <button class="btn-razorpay" id="btnRazorpay" onclick="handlePayment()">
         Pay ₹499 via
         <strong style="font-family:monospace;font-size:0.8rem;letter-spacing:0.02em">Razorpay</strong>
       </button>
@@ -715,23 +443,6 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     AUTH MODAL
-═══════════════════════════════════════════════════════════════ -->
-<!-- LOGOUT CONFIRM MODAL -->
-<div class="confirm-backdrop" id="logoutModal">
-  <div class="confirm-box">
-    <h3>Sign out?</h3>
-    <p>Are you sure you want to sign out of your account?</p>
-    <div class="confirm-btns">
-      <button class="btn btn-ghost" onclick="closeLogoutModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="doSignOut()">Yes, sign out</button>
-    </div>
-  </div>
-</div>
-
-<!-- AUTH MODAL -->
-<div class="confirm-backdrop" style="display:none" id="dummyspacer"></div>
 <div class="modal-backdrop" id="authModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -741,12 +452,11 @@
     <div class="tab-row">
       <button class="tab active" id="tabSignup" onclick="switchTab('signup')">Sign up</button>
       <button class="tab" id="tabLogin" onclick="switchTab('login')">Log in</button>
-      <button class="tab" id="tabPhone" onclick="switchTab('phone')">📱 Mobile</button>
+      <button class="tab" id="tabPhone" onclick="switchTab('phone')">Phone</button>
     </div>
 
     <div class="modal-msg" id="modalMsg"></div>
 
-    <!-- SIGNUP FORM -->
     <div id="formSignup">
       <div class="f-group">
         <label>Full name</label>
@@ -762,12 +472,11 @@
       </div>
       <div class="f-group">
         <label>Confirm Password</label>
-        <input type="password" id="suPassConfirm" placeholder="Re-enter password" autocomplete="new-password" />
+        <input type="password" id="suPassConf" placeholder="Re-type password" autocomplete="new-password" />
       </div>
       <button class="btn btn-primary btn-full" onclick="doSignup()">Create free account</button>
     </div>
 
-    <!-- LOGIN FORM -->
     <div id="formLogin" style="display:none">
       <div class="f-group">
         <label>Email</label>
@@ -780,30 +489,24 @@
       <button class="btn btn-primary btn-full" onclick="doLogin()">Log in</button>
     </div>
 
-    <!-- PHONE FORM -->
     <div id="formPhone" style="display:none">
-      <div class="f-group">
-        <label>Mobile number</label>
-        <div class="phone-row">
-          <input class="country-code" type="text" id="phCode" value="+91" />
-          <input class="field" type="tel" id="phNumber" placeholder="9876543210"
-                 style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;font-family:inherit;outline:none;width:100%" />
-        </div>
+      <div class="f-group" id="phoneGroup">
+        <label>Mobile Number (with country code)</label>
+        <input type="tel" id="phoneNumber" placeholder="+91 9876543210" />
       </div>
-      <div id="recaptcha-container"></div>
-      <button class="btn btn-primary btn-full" onclick="sendOTP()" id="btnSendOTP">Send OTP</button>
-      <div class="f-group" id="otpGroup" style="display:none;margin-top:1rem">
-        <label>Enter OTP</label>
-        <div class="otp-row">
-          <input type="number" id="otpInput" placeholder="6-digit OTP" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;color:var(--text);font-size:0.9rem;font-family:inherit;outline:none;" />
-          <button onclick="verifyOTP()">Verify →</button>
-        </div>
+      <div id="recaptcha-container" style="margin-bottom: 1rem;"></div>
+      
+      <button class="btn btn-primary btn-full" id="btnSendOtp" onclick="sendOTP()">Send OTP</button>
+
+      <div class="f-group" id="otpGroup" style="display:none; margin-top: 1rem;">
+        <label>Enter 6-digit OTP</label>
+        <input type="text" id="otpCode" placeholder="123456" autocomplete="one-time-code" />
+        <button class="btn btn-primary btn-full" style="margin-top: 1rem;" onclick="verifyOTP()">Verify & Log in</button>
       </div>
     </div>
 
     <div class="divider">or</div>
     <button class="btn-google" onclick="doGoogle()">
-      <!-- Google G logo -->
       <svg width="16" height="16" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -818,15 +521,22 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="logoutModal">
+  <div class="modal" style="max-width: 340px; text-align: center; padding: 2rem 1.5rem;">
+    <h2 style="font-size: 1.25rem;">Sign out?</h2>
+    <div class="sub" style="margin-bottom: 0;">Are you sure you want to securely log out of your session?</div>
+    <div style="display:flex; gap:0.8rem; margin-top: 1.8rem;">
+      <button class="btn btn-ghost btn-full" onclick="closeLogoutModal()">Cancel</button>
+      <button class="btn btn-danger-solid btn-full" onclick="executeSignOut()">Yes, log out</button>
+    </div>
+  </div>
+</div>
+
 <footer>© 2026 Asheesh.in · Privacy-first secure transfer</footer>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SCRIPTS
-═══════════════════════════════════════════════════════════════ -->
 <script>
 /* ───────────────────────────────────────────────────────────────
    ⚠  STEP 1: REPLACE this entire object with your real config
-   from Firebase Console → Project Settings → Your apps → SDK setup
 ─────────────────────────────────────────────────────────────────*/
 const firebaseConfig = {
   apiKey: "AIzaSyDpJcK-Iw4g7v4Lk4U_W8BrlHqzNhKW4EY",
@@ -838,24 +548,16 @@ const firebaseConfig = {
   measurementId: "G-9ZQS50HZQQ"
 };
 
-/* ───────────────────────────────────────────────────────────────
-   ⚠  STEP 2: Replace with your Razorpay TEST key
-   from Razorpay Dashboard → Settings → API Keys
-   Format: rzp_test_XXXXXXXXXXXXXXXXXX
-─────────────────────────────────────────────────────────────────*/
 const RAZORPAY_KEY_ID = "rzp_test_SgtCXau28YMYC2";
-
-/* ───────────────────────────────────────────────────────────────
-   ⚠  STEP 3: Replace with your backend order-creation URL
-   Your server calls Razorpay API and returns { order_id }
-   (see README section in this file for the backend snippet)
-─────────────────────────────────────────────────────────────────*/
 const BACKEND_ORDER_URL = "https://asheesh-backend-v2.vercel.app/api/create-order";
 
 /* ─── FIREBASE INIT ──────────────────────────────────────────── */
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
+
+// Global variable for phone auth confirmation
+let phoneConfirmationResult = null;
 
 /* ─── AUTH STATE LISTENER ────────────────────────────────────── */
 auth.onAuthStateChanged(user => {
@@ -869,10 +571,12 @@ auth.onAuthStateChanged(user => {
 function onLogin(user) {
   // nav
   document.getElementById('userChip').classList.add('show');
-  document.getElementById('userAvatar').textContent =
-    (user.displayName || user.email || 'U')[0].toUpperCase();
-  document.getElementById('userEmail').textContent =
-    user.displayName || user.email.split('@')[0];
+  
+  // Handle formatting based on email or phone
+  const identifier = user.displayName || user.email || user.phoneNumber || 'User';
+  document.getElementById('userAvatar').textContent = identifier[0].toUpperCase();
+  document.getElementById('userEmail').textContent = identifier.split('@')[0];
+  
   document.getElementById('btnSignOut').style.display = 'inline-block';
   document.getElementById('btnLogin').style.display  = 'none';
   document.getElementById('btnSignup').style.display = 'none';
@@ -880,6 +584,7 @@ function onLogin(user) {
   document.getElementById('gateBanner').style.display  = 'none';
   document.getElementById('sendOverlay').style.display = 'none';
   document.getElementById('recvOverlay').style.display = 'none';
+  
   // check Pro status from Firestore
   checkProStatus(user.uid);
 }
@@ -896,11 +601,17 @@ async function checkProStatus(uid) {
 }
 
 function activateProUI() {
-  // Hide entire upgrade section
-  const paySection = document.querySelector('.pay-section');
-  if (paySection) paySection.style.display = 'none';
-  // Show Pro badge in nav
-  document.getElementById('proBadge').classList.add('show');
+  // Hide the entire upgrade section
+  const paySection = document.getElementById('paySection');
+  if (paySection) {
+    paySection.style.display = 'none';
+  }
+  
+  // Show the PRO badge in the navigation bar
+  const proBadge = document.getElementById('navProBadge');
+  if (proBadge) {
+    proBadge.style.display = 'inline-flex';
+  }
 }
 
 function onLogout() {
@@ -911,20 +622,25 @@ function onLogout() {
   document.getElementById('gateBanner').style.display = 'flex';
   document.getElementById('sendOverlay').style.display = 'flex';
   document.getElementById('recvOverlay').style.display = 'flex';
+  
+  // Reset Pro UI state
+  document.getElementById('paySection').style.display = 'block';
+  document.getElementById('navProBadge').style.display = 'none';
 }
 
+/* ─── LOGOUT POPUP FLOW ──────────────────────────────────────── */
 function confirmSignOut() {
   document.getElementById('logoutModal').classList.add('open');
 }
 function closeLogoutModal() {
   document.getElementById('logoutModal').classList.remove('open');
 }
-function doSignOut() {
-  closeLogoutModal();
+function executeSignOut() {
   auth.signOut();
+  closeLogoutModal();
 }
 
-/* ─── MODAL HELPERS ──────────────────────────────────────────── */
+/* ─── MAIN AUTH MODAL HELPERS ────────────────────────────────── */
 function openModal(tab) {
   document.getElementById('authModal').classList.add('open');
   switchTab(tab);
@@ -933,20 +649,38 @@ function openModal(tab) {
 function closeModal() {
   document.getElementById('authModal').classList.remove('open');
   clearMsg();
+  // Reset phone form if it was used
+  document.getElementById('phoneGroup').style.display = 'block';
+  document.getElementById('btnSendOtp').style.display = 'block';
+  document.getElementById('recaptcha-container').style.display = 'block';
+  document.getElementById('otpGroup').style.display = 'none';
+  document.getElementById('phoneNumber').value = '';
+  document.getElementById('otpCode').value = '';
 }
+
 function switchTab(t) {
   document.getElementById('formSignup').style.display = t === 'signup' ? 'block' : 'none';
   document.getElementById('formLogin').style.display  = t === 'login'  ? 'block' : 'none';
   document.getElementById('formPhone').style.display  = t === 'phone'  ? 'block' : 'none';
+  
   document.getElementById('tabSignup').className = 'tab' + (t === 'signup' ? ' active' : '');
   document.getElementById('tabLogin').className  = 'tab' + (t === 'login'  ? ' active' : '');
   document.getElementById('tabPhone').className  = 'tab' + (t === 'phone'  ? ' active' : '');
-  const titles = { signup: 'Create account', login: 'Welcome back', phone: 'Mobile sign-in' };
-  const subs   = { signup: 'Free forever. No credit card.', login: 'Log in to asheesh.in', phone: 'We'll send an OTP to verify' };
-  document.getElementById('modalTitle').textContent = titles[t];
-  document.getElementById('modalSub').textContent   = subs[t];
+  
+  if (t === 'signup') {
+    document.getElementById('modalTitle').textContent = 'Create account';
+    document.getElementById('modalSub').textContent   = 'Free forever. No credit card.';
+  } else if (t === 'login') {
+    document.getElementById('modalTitle').textContent = 'Welcome back';
+    document.getElementById('modalSub').textContent   = 'Log in to asheesh.in';
+  } else {
+    document.getElementById('modalTitle').textContent = 'Phone Login';
+    document.getElementById('modalSub').textContent   = 'Secure passwordless entry';
+    initRecaptcha();
+  }
   clearMsg();
 }
+
 function showMsg(text, type) {
   const el = document.getElementById('modalMsg');
   el.textContent = text;
@@ -962,16 +696,21 @@ function clearMsg() {
 document.getElementById('authModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+document.getElementById('logoutModal').addEventListener('click', function(e) {
+  if (e.target === this) closeLogoutModal();
+});
 
-/* ─── SIGNUP ─────────────────────────────────────────────────── */
+/* ─── EMAIL SIGNUP ───────────────────────────────────────────── */
 async function doSignup() {
-  const name    = document.getElementById('suName').value.trim();
-  const email   = document.getElementById('suEmail').value.trim();
-  const pass    = document.getElementById('suPass').value;
-  const confirm = document.getElementById('suPassConfirm').value;
-  if (!name || !email || !pass || !confirm) { showMsg('Please fill all fields', 'err'); return; }
-  if (pass.length < 6)   { showMsg('Password must be at least 6 characters', 'err'); return; }
-  if (pass !== confirm)  { showMsg('Passwords do not match', 'err'); return; }
+  const name  = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass  = document.getElementById('suPass').value;
+  const pass2 = document.getElementById('suPassConf').value; // Confirm password added
+
+  if (!name || !email || !pass || !pass2) { showMsg('Please fill all fields', 'err'); return; }
+  if (pass.length < 6)          { showMsg('Password must be at least 6 characters', 'err'); return; }
+  if (pass !== pass2)           { showMsg('Passwords do not match', 'err'); return; }
+
   showMsg('Creating account…', 'info');
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -982,7 +721,7 @@ async function doSignup() {
   }
 }
 
-/* ─── LOGIN ──────────────────────────────────────────────────── */
+/* ─── EMAIL LOGIN ────────────────────────────────────────────── */
 async function doLogin() {
   const email = document.getElementById('liEmail').value.trim();
   const pass  = document.getElementById('liPass').value;
@@ -993,6 +732,50 @@ async function doLogin() {
     closeModal();
   } catch (e) {
     showMsg(friendlyError(e.code), 'err');
+  }
+}
+
+/* ─── PHONE AUTHENTICATION ───────────────────────────────────── */
+function initRecaptcha() {
+  if (!window.recaptchaVerifier) {
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      'size': 'normal',
+      'callback': (response) => {
+        // reCAPTCHA solved automatically
+      }
+    });
+  }
+}
+
+async function sendOTP() {
+  const phone = document.getElementById('phoneNumber').value.trim();
+  if (!phone || phone.length < 10) { showMsg('Enter a valid phone number with country code', 'err'); return; }
+  
+  showMsg('Sending OTP...', 'info');
+  try {
+    const appVerifier = window.recaptchaVerifier;
+    phoneConfirmationResult = await auth.signInWithPhoneNumber(phone, appVerifier);
+    
+    showMsg('OTP sent successfully!', 'ok');
+    document.getElementById('phoneGroup').style.display = 'none';
+    document.getElementById('btnSendOtp').style.display = 'none';
+    document.getElementById('recaptcha-container').style.display = 'none';
+    document.getElementById('otpGroup').style.display = 'block';
+  } catch(e) {
+    showMsg(friendlyError(e.code) || 'Error sending OTP. Ensure phone auth is enabled in Firebase.', 'err');
+  }
+}
+
+async function verifyOTP() {
+  const code = document.getElementById('otpCode').value.trim();
+  if (!code) { showMsg('Enter the OTP', 'err'); return; }
+  
+  showMsg('Verifying...', 'info');
+  try {
+    await phoneConfirmationResult.confirm(code);
+    closeModal();
+  } catch(e) {
+    showMsg('Invalid OTP. Please try again.', 'err');
   }
 }
 
@@ -1008,49 +791,6 @@ async function doGoogle() {
   }
 }
 
-/* ─── PHONE AUTH ─────────────────────────────────────────────── */
-let confirmationResult = null;
-
-function sendOTP() {
-  const code   = document.getElementById('phCode').value.trim();
-  const number = document.getElementById('phNumber').value.trim();
-  if (!number || number.length < 10) { showMsg('Enter a valid mobile number', 'err'); return; }
-
-  const fullNumber = code + number;
-  showMsg('Sending OTP…', 'info');
-
-  // Set up invisible reCAPTCHA (required by Firebase phone auth)
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      size: 'invisible',
-      callback: () => {}
-    });
-  }
-
-  auth.signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
-    .then(result => {
-      confirmationResult = result;
-      document.getElementById('otpGroup').style.display = 'block';
-      document.getElementById('btnSendOTP').textContent = 'Resend OTP';
-      showMsg('OTP sent to ' + fullNumber, 'ok');
-    })
-    .catch(err => {
-      showMsg(friendlyError(err.code), 'err');
-      // Reset recaptcha on error
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
-    });
-}
-
-function verifyOTP() {
-  const otp = document.getElementById('otpInput').value.trim();
-  if (!otp || otp.length !== 6) { showMsg('Enter the 6-digit OTP', 'err'); return; }
-  showMsg('Verifying OTP…', 'info');
-  confirmationResult.confirm(otp)
-    .then(() => { closeModal(); })
-    .catch(() => { showMsg('Invalid OTP. Please try again.', 'err'); });
-}
-
 function friendlyError(code) {
   const map = {
     'auth/email-already-in-use':    'This email is already registered. Try logging in.',
@@ -1058,20 +798,15 @@ function friendlyError(code) {
     'auth/weak-password':           'Password is too weak. Use at least 6 characters.',
     'auth/user-not-found':          'No account found with this email.',
     'auth/wrong-password':          'Incorrect password.',
-    'auth/popup-closed-by-user':    'Google sign-in was cancelled.',
+    'auth/popup-closed-by-user':    'Sign-in was cancelled.',
     'auth/network-request-failed':  'Network error. Check your connection.',
-    'auth/invalid-phone-number':    'Invalid phone number. Include country code.',
-    'auth/too-many-requests':       'Too many attempts. Try again later.',
-    'auth/code-expired':            'OTP expired. Please resend.',
-    'auth/invalid-verification-code': 'Wrong OTP. Please check and retry.',
+    'auth/invalid-phone-number':    'Invalid phone format. Ensure you include the country code (e.g., +91).',
+    'auth/too-many-requests':       'Too many requests. Please try again later.'
   };
   return map[code] || 'Something went wrong. Please try again.';
 }
 
 /* ─── FILE TRANSFER STUBS ────────────────────────────────────── */
-// Your existing WebRTC / PeerJS logic goes here.
-// These stubs keep the UI functional for now.
-
 function onFileSelect(input) {
   const f = input.files[0];
   document.getElementById('selectedFile').textContent = f ? `✓ ${f.name} (${formatBytes(f.size)})` : '';
@@ -1122,14 +857,12 @@ async function handlePayment() {
   payMsg.textContent = '⏳ Preparing checkout…';
 
   try {
-    // Step 1: Create order
     const res = await fetch(BACKEND_ORDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
     const { order_id } = await res.json();
 
-    // Step 2: Open Razorpay checkout
     const options = {
       key:         RAZORPAY_KEY_ID,
       amount:      49900,
@@ -1139,14 +872,14 @@ async function handlePayment() {
       order_id:    order_id,
       prefill: {
         name:  user.displayName || '',
-        email: user.email || ''
+        email: user.email || '',
+        contact: user.phoneNumber || ''
       },
       theme: { color: '#4f8ef7' },
       handler: async function(response) {
         payMsg.textContent = '⏳ Verifying payment…';
         payMsg.style.color = 'var(--accent)';
 
-        // Step 3: Verify payment signature on backend + save Pro to Firestore
         try {
           const verifyRes = await fetch(
             BACKEND_ORDER_URL.replace('create-order', 'verify-payment'),
@@ -1164,9 +897,7 @@ async function handlePayment() {
           const result = await verifyRes.json();
 
           if (result.verified) {
-            payMsg.textContent = '✓ Payment verified! Pro access activated.';
-            payMsg.style.color = 'var(--success)';
-            activateProUI();
+            activateProUI(); // Will hide the upgrade section and show PRO badge
           } else {
             payMsg.textContent = '✗ Payment verification failed. Contact support.';
             payMsg.style.color = 'var(--danger)';
@@ -1186,7 +917,6 @@ async function handlePayment() {
   }
 }
 </script>
-
 
 </body>
 </html>
