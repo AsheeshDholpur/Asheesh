@@ -8,6 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
@@ -309,7 +310,23 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ─── PROGRESS ──────────────────────────────────────────────── */
+    .progress-wrap { display:none; margin-top:0.8rem; }
+    .progress-file-info { font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .progress-track { width:100%; height:6px; background:var(--surface); border-radius:3px; overflow:hidden; margin-bottom:0.3rem; }
+    .progress-bar { height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; transition:width 0.1s ease; }
+    .progress-text { font-size:0.72rem; color:var(--muted); font-family:'Courier New',monospace; }
+    .file-list-preview { margin-bottom:0.8rem; }
+    .file-item { display:flex; align-items:center; gap:0.5rem; font-size:0.78rem; color:var(--muted); padding:0.25rem 0; border-bottom:1px solid var(--border); }
+    .file-item:last-child { border-bottom:none; }
+    .file-item .file-size { margin-left:auto; font-family:'Courier New',monospace; font-size:0.72rem; }
+    .copy-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); padding:0.35rem 0.65rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-family:inherit; transition:all 0.18s; white-space:nowrap; }
+    .copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .room-row { display:flex; gap:0.4rem; align-items:center; margin-top:0.3rem; }
+    .room-row .field { margin-bottom:0; flex:1; font-size:0.85rem; letter-spacing:0.05em; }
+
     /* ─── FOOTER ────────────────────────────────────────────────── */
+    
     footer { text-align: center; padding: 1.5rem; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); }
   </style>
 </head>
@@ -359,22 +376,30 @@
         <span>Sign in to send files</span>
       </div>
       <div class="card-icon send">📤</div>
-      <h2>Send File</h2>
-      <p>Share your Room ID with the receiver, then send your file securely.</p>
-
-      <div class="field-label">Room ID</div>
-      <input class="field" id="sendRoomId" placeholder="e.g. secure-abc-123" readonly
-             onfocus="this.removeAttribute('readonly')" />
+      <h2>Send Files</h2>
+      <p>Select files, share the Room ID with the receiver, then send.</p>
 
       <div class="field-group">
-        <label class="file-label" for="fileInput">
-          📎 Click to select file
-        </label>
-        <input type="file" id="fileInput" onchange="onFileSelect(this)" />
-        <div id="selectedFile"></div>
+        <label class="file-label" for="fileInput">📎 Click to select files (max 100MB each)</label>
+        <input type="file" id="fileInput" multiple onchange="onFileSelect(this)" />
+        <div id="fileListPreview" class="file-list-preview"></div>
       </div>
 
-      <button class="btn btn-primary btn-full" onclick="sendFile()">Send securely →</button>
+      <div id="roomDisplay" style="display:none; margin-bottom:0.8rem">
+        <div class="field-label">Room ID — share this with receiver</div>
+        <div class="room-row">
+          <input class="field" id="sendRoomId" readonly />
+          <button class="copy-btn" onclick="copyRoomId()">Copy</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btnSend" onclick="handleSend()" style="display:none">Send securely →</button>
+
+      <div id="sendProgressWrap" class="progress-wrap">
+        <div class="progress-file-info" id="sendFileInfo">Preparing…</div>
+        <div class="progress-track"><div class="progress-bar" id="sendProgressBar"></div></div>
+        <div class="progress-text" id="sendProgressText">0 B / 0 B</div>
+      </div>
       <div class="status" id="sendStatus"></div>
     </div>
 
@@ -384,18 +409,19 @@
         <span>Sign in to receive files</span>
       </div>
       <div class="card-icon recv">📥</div>
-      <h2>Receive File</h2>
+      <h2>Receive Files</h2>
       <p>Enter the Room ID shared by the sender to connect and download.</p>
 
       <div class="field-label">Room ID</div>
-      <input class="field" id="recvRoomId" placeholder="Enter Room ID from sender" />
+      <input class="field" id="recvRoomId" placeholder="e.g. abcd-efgh-ijkl" />
 
-      <button class="btn btn-primary btn-full" onclick="connectRoom()" style="margin-bottom:0.8rem">
-        Connect &amp; receive
-      </button>
-      <button class="btn btn-ghost btn-full" id="btnDownload" style="display:none" onclick="downloadFile()">
-        ⬇ Download file
-      </button>
+      <button class="btn btn-primary btn-full" onclick="handleReceive()">Connect &amp; receive</button>
+
+      <div id="recvProgressWrap" class="progress-wrap">
+        <div class="progress-file-info" id="recvFileInfo">Waiting for files…</div>
+        <div class="progress-track"><div class="progress-bar" id="recvProgressBar"></div></div>
+        <div class="progress-text" id="recvProgressText">0 B / 0 B</div>
+      </div>
       <div class="status" id="recvStatus"></div>
     </div>
 
@@ -545,7 +571,8 @@ const firebaseConfig = {
   storageBucket: "asheesh-in.firebasestorage.app",
   messagingSenderId: "779624277364",
   appId: "1:779624277364:web:72f03112ddb71725aab821",
-  measurementId: "G-9ZQS50HZQQ"
+  measurementId: "G-9ZQS50HZQQ",
+  databaseURL: "https://asheesh-in-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const RAZORPAY_KEY_ID = "rzp_test_SgtCXau28YMYC2";
@@ -806,43 +833,59 @@ function friendlyError(code) {
   return map[code] || 'Something went wrong. Please try again.';
 }
 
-/* ─── FILE TRANSFER STUBS ────────────────────────────────────── */
+/* ─── FILE SELECT ────────────────────────────────────────────── */
 function onFileSelect(input) {
-  const f = input.files[0];
-  document.getElementById('selectedFile').textContent = f ? `✓ ${f.name} (${formatBytes(f.size)})` : '';
-}
-
-function sendFile() {
-  const roomId = document.getElementById('sendRoomId').value.trim();
-  if (!roomId) { setStatus('sendStatus', 'Enter a Room ID first', 'error'); return; }
-  if (!document.getElementById('fileInput').files[0]) {
-    setStatus('sendStatus', 'Select a file first', 'error'); return;
+  const files = Array.from(input.files);
+  const preview = document.getElementById('fileListPreview');
+  const roomDisplay = document.getElementById('roomDisplay');
+  const btnSend = document.getElementById('btnSend');
+  if (files.length === 0) { preview.innerHTML = ''; roomDisplay.style.display = 'none'; btnSend.style.display = 'none'; return; }
+  let html = '', hasOversized = false;
+  for (const f of files) {
+    const over = f.size > 100 * 1024 * 1024;
+    if (over) hasOversized = true;
+    html += `<div class="file-item"><span>${over ? '⚠' : '📄'}</span><span style="${over ? 'color:var(--danger)' : ''}">${f.name}</span><span class="file-size">${formatBytes(f.size)}</span></div>`;
   }
-  setStatus('sendStatus', '⏳ Connecting to peer… (wire up your WebRTC logic here)', 'info');
+  preview.innerHTML = html;
+  updateSendStatus(hasOversized ? 'Some files exceed 100MB and will be skipped' : '', hasOversized ? 'error' : '');
+  roomDisplay.style.display = 'block';
+  btnSend.style.display = 'block';
+  document.getElementById('sendRoomId').value = generateRoomId();
 }
 
-function connectRoom() {
-  const roomId = document.getElementById('recvRoomId').value.trim();
-  if (!roomId) { setStatus('recvStatus', 'Enter a Room ID', 'error'); return; }
-  setStatus('recvStatus', '⏳ Waiting for sender… (wire up your WebRTC logic here)', 'info');
-  document.getElementById('btnDownload').style.display = 'block';
+function copyRoomId() {
+  navigator.clipboard.writeText(document.getElementById('sendRoomId').value).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
 }
 
-function downloadFile() {
-  setStatus('recvStatus', '⬇ Downloading… (connect your actual data channel here)', 'info');
+async function handleSend() {
+  const files = Array.from(document.getElementById('fileInput').files);
+  if (files.length === 0) { updateSendStatus('Select files first', 'error'); return; }
+  const btn = document.getElementById('btnSend');
+  btn.disabled = true; btn.textContent = 'Connecting…';
+  try { await startSend(files); }
+  catch(e) { updateSendStatus('Error: ' + e.message, 'error'); btn.disabled = false; btn.textContent = 'Send securely →'; }
 }
 
-function setStatus(id, msg, type) {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = 'status ' + type;
+async function handleReceive() {
+  const rid = document.getElementById('recvRoomId').value.trim();
+  if (!rid) { updateRecvStatus('Enter a Room ID', 'error'); return; }
+  try { await startReceive(rid); }
+  catch(e) { updateRecvStatus('Error: ' + e.message, 'error'); }
 }
 
 function formatBytes(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(1) + ' GB';
 }
+
+// Init WebRTC after Firebase is ready
+window.addEventListener('load', () => { if (typeof initWebRTC === 'function') initWebRTC(); });
 
 /* ─── RAZORPAY PAYMENT ───────────────────────────────────────── */
 async function handlePayment() {
@@ -918,5 +961,6 @@ async function handlePayment() {
 }
 </script>
 
+<script src="webrtc.js"></script>
 </body>
 </html>
