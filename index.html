@@ -848,10 +848,9 @@ function onFileSelect(input) {
   }
   preview.innerHTML = html;
   updateSendStatus(hasOversized ? 'Some files exceed 100MB and will be skipped' : '', hasOversized ? 'error' : '');
-  roomDisplay.style.display = 'block';
+  roomDisplay.style.display = 'none';
   btnSend.style.display = 'block';
-  document.getElementById('sendRoomId').value = generateRoomId();
-}
+  }
 
 function copyRoomId() {
   navigator.clipboard.writeText(document.getElementById('sendRoomId').value).then(() => {
