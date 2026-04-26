@@ -853,24 +853,39 @@ function friendlyError(code) {
 }
 
 /* ─── FILE SELECT ────────────────────────────────────────────── */
-function onFileSelect(input) {
+async function onFileSelect(input) {
   const files = Array.from(input.files);
   const preview = document.getElementById('fileListPreview');
   const roomDisplay = document.getElementById('roomDisplay');
   const btnSend = document.getElementById('btnSend');
   if (files.length === 0) { preview.innerHTML = ''; roomDisplay.style.display = 'none'; btnSend.style.display = 'none'; return; }
+
+  // ── Always verify Pro status from Firestore — never trust UI state ──
+  let isPro = false;
+  const user = auth.currentUser;
+  if (user) {
+    try {
+      const doc = await db.collection('users').doc(user.uid).get();
+      isPro = doc.exists && doc.data().isPro === true;
+    } catch(e) {
+      isPro = false; // fail safe — treat as free on error
+    }
+  }
+
+  const maxSize = isPro ? 2 * 1024 * 1024 * 1024 : 100 * 1024 * 1024;
+  const limitLabel = isPro ? '2GB' : '100MB';
+
   let html = '', hasOversized = false;
   for (const f of files) {
-    const isPro = document.getElementById('navProBadge').style.display !== 'none';
-    const over = f.size > (isPro ? 2 * 1024 * 1024 * 1024 : 100 * 1024 * 1024);
+    const over = f.size > maxSize;
     if (over) hasOversized = true;
     html += `<div class="file-item"><span>${over ? '⚠' : '📄'}</span><span style="${over ? 'color:var(--danger)' : ''}">${f.name}</span><span class="file-size">${formatBytes(f.size)}</span></div>`;
   }
   preview.innerHTML = html;
-  updateSendStatus(hasOversized ? 'Some files exceed 100MB and will be skipped' : '', hasOversized ? 'error' : '');
+  updateSendStatus(hasOversized ? `Some files exceed ${limitLabel} limit and will be skipped` : '', hasOversized ? 'error' : '');
   roomDisplay.style.display = 'none';
   btnSend.style.display = 'block';
-  }
+}
 
 function copyRoomId() {
   navigator.clipboard.writeText(document.getElementById('sendRoomId').value).then(() => {
