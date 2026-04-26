@@ -413,7 +413,7 @@
       <p>Enter the Room ID shared by the sender to connect and download.</p>
 
       <div class="field-label">Room ID</div>
-      <input class="field" id="recvRoomId" placeholder="e.g. abcd-efgh-ijkl" />
+      <input class="field" id="recvRoomId" placeholder="e.g. abcd-efgh-ijkl" autocomplete="off" />
 
       <button class="btn btn-primary btn-full" onclick="handleReceive()">Connect &amp; receive</button>
 
@@ -722,6 +722,20 @@ function clearMsg() {
 // close on backdrop click
 document.getElementById('authModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
+});
+
+// Enter key submits active form
+document.getElementById('authModal').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const active = document.querySelector('#authModal .tab.active');
+  if (!active) return;
+  const tab = active.id.replace('tab','').toLowerCase();
+  if (tab === 'signup') doSignup();
+  else if (tab === 'login') doLogin();
+  else if (tab === 'phone') {
+    const otpVisible = document.getElementById('otpGroup').style.display !== 'none';
+    otpVisible ? verifyOTP() : sendOTP();
+  }
 });
 document.getElementById('logoutModal').addEventListener('click', function(e) {
   if (e.target === this) closeLogoutModal();
