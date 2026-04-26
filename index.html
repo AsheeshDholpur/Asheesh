@@ -1037,7 +1037,7 @@ function switchTab(t) {
   document.getElementById('tabLogin').className  = 'tab' + (t === 'login'  ? ' active' : '');
   document.getElementById('tabPhone').className  = 'tab' + (t === 'phone'  ? ' active' : '');
   const titles = { signup: 'Create account', login: 'Welcome back', phone: 'Mobile sign-in' };
-  const subs   = { signup: 'Free forever. No credit card.', login: 'Log in to asheesh.in', phone: 'We'll send an OTP to verify' };
+  const subs   = { signup: 'Free forever. No credit card.', login: 'Log in to asheesh.in', phone: 'We\'ll send an OTP to verify' };
   document.getElementById('modalTitle').textContent = titles[t];
   document.getElementById('modalSub').textContent   = subs[t];
   clearMsg();
