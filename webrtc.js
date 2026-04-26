@@ -81,7 +81,7 @@ async function startSend(files) {
   // Generate Room ID and show it
   roomId = generateRoomId();
   document.getElementById('sendRoomId').value = roomId;
-  updateSendStatus(`Room created: ${roomId} — waiting for receiver…`, 'info');
+  updateSendStatus(`Room created: <span onclick="navigator.clipboard.writeText('${roomId}').then(()=>{this.style.background='var(--success)';this.style.color='#fff';setTimeout(()=>{this.style.background='rgba(79,142,247,0.2)';this.style.color='var(--accent)'},1500)})" style="font-family:'Courier New',monospace;background:rgba(79,142,247,0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:4px;cursor:pointer;user-select:all;border:1px solid rgba(79,142,247,0.4)" title="Click to copy">${roomId}</span> — click ID to copy, waiting for receiver…`, 'info');
   showSendProgress(false);
 
   // Create Firebase room
@@ -333,7 +333,7 @@ function formatBytes(b) {
 function updateSendStatus(msg, type) {
   const el = document.getElementById('sendStatus');
   if (!el) return;
-  el.textContent = msg;
+  el.innerHTML = msg;
   el.className = 'status ' + type;
 }
 function updateSendProgress(pct, bytes, total) {
