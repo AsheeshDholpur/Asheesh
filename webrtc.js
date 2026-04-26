@@ -4,7 +4,8 @@
    Supports multiple files, progress tracking, 100MB limit
 ================================================================ */
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE_FREE = 100 * 1024 * 1024;  // 100MB
+const MAX_FILE_SIZE_PRO  = 2 * 1024 * 1024 * 1024; // 2GB
 const CHUNK_SIZE    = 64 * 1024;          // 64KB chunks
 const ICE_SERVERS   = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -65,11 +66,15 @@ async function startSend(files) {
   cleanupRoom();
   currentRole = 'sender';
 
-  // Validate files
+  // Validate files based on Pro status
+  const isPro = document.getElementById('navProBadge').style.display !== 'none';
+  const maxSize = isPro ? MAX_FILE_SIZE_PRO : MAX_FILE_SIZE_FREE;
+  const limitLabel = isPro ? '2GB' : '100MB';
+
   const validFiles = [];
   for (const f of files) {
-    if (f.size > MAX_FILE_SIZE) {
-      updateSendStatus(`"${f.name}" exceeds 100MB limit — skipped`, 'error');
+    if (f.size > maxSize) {
+      updateSendStatus(`"${f.name}" exceeds ${limitLabel} limit — skipped`, 'error');
       continue;
     }
     validFiles.push(f);
