@@ -380,7 +380,7 @@
       <p>Select files, share the Room ID with the receiver, then send.</p>
 
       <div class="field-group">
-        <label class="file-label" for="fileInput">📎 Click to select files (max 100MB each)</label>
+        <label class="file-label" for="fileInput" id="fileLimitLabel">📎 Click to select files (max 100MB each)</label>
         <input type="file" id="fileInput" multiple onchange="onFileSelect(this)" />
         <div id="fileListPreview" class="file-list-preview"></div>
       </div>
@@ -614,6 +614,8 @@ function onLogin(user) {
   
   // check Pro status from Firestore
   checkProStatus(user.uid);
+  // Update file label based on pro status (will be updated again after pro check)
+  document.getElementById('fileLimitLabel').textContent = '📎 Click to select files (max 100MB each)';
 }
 
 async function checkProStatus(uid) {
@@ -639,6 +641,9 @@ function activateProUI() {
   if (proBadge) {
     proBadge.style.display = 'inline-flex';
   }
+  // Update file size limit label for Pro users
+  const lbl = document.getElementById('fileLimitLabel');
+  if (lbl) lbl.textContent = '📎 Click to select files (max 2GB each)';
 }
 
 function onLogout() {
@@ -856,7 +861,8 @@ function onFileSelect(input) {
   if (files.length === 0) { preview.innerHTML = ''; roomDisplay.style.display = 'none'; btnSend.style.display = 'none'; return; }
   let html = '', hasOversized = false;
   for (const f of files) {
-    const over = f.size > 100 * 1024 * 1024;
+    const isPro = document.getElementById('navProBadge').style.display !== 'none';
+    const over = f.size > (isPro ? 2 * 1024 * 1024 * 1024 : 100 * 1024 * 1024);
     if (over) hasOversized = true;
     html += `<div class="file-item"><span>${over ? '⚠' : '📄'}</span><span style="${over ? 'color:var(--danger)' : ''}">${f.name}</span><span class="file-size">${formatBytes(f.size)}</span></div>`;
   }
