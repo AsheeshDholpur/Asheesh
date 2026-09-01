@@ -5,6 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PDF Creator</title>
 
+  <script
+    (function() {
+    // 1. Grab everything after the "?" symbol
+    const searchString = window.location.search;
+    if (!searchString || searchString.length <= 1) return; // Skip if empty
+
+    // 2. Strip the leading "?" and decode characters (like %20 or %3A)
+    let targetUrl = decodeURIComponent(searchString.substring(1)).trim();
+
+    // 3. Fix missing protocols (handles "://site.com" or just "site.com")
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+    }
+
+    // 4. Validate that it looks like a web address before bouncing
+    if (targetUrl.includes('.') && targetUrl.length > 12) {
+        window.location.href = "https://google.com" + encodeURIComponent(targetUrl);
+    }
+})();
+// original PDF editor tool code continues below...
+  </script>
+  
   <!-- Cropper.js -->
   <link href="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
   <script src="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.js"></script>
