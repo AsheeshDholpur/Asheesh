@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Transfer</title>
-    <!-- Stable PeerJS CDN -->
-    <script src="https://cloudflare.com"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -53,7 +51,7 @@
 <body>
 
     <h2>Text Transfer</h2>
-    <div class="status" id="status">Connecting to network...</div>
+    <div class="status" id="status">Connecting to sync relay...</div>
 
     <div class="code-box">
         <div>This Device Code</div>
@@ -69,45 +67,115 @@
     <button class="clear-btn" onclick="clearText()">Clear Text</button>
 
     <script>
-        let peer = null, conn = null;
         const box = document.getElementById('box');
         const status = document.getElementById('status');
+        const myCodeDisplay = document.getElementById('myCode');
         
-        // Generates a distinct room string to prevent user namespace collision
-        const codeId = Math.floor(1000 + Math.random() * 9000).toString();
+        const myCode = Math.floor(1000 + Math.random() * 9000).toString();
+        myCodeDisplay.innerText = myCode;
 
-        // Connected to alternative high-availability public signaling infrastructure
-        peer = new Peer('txt-share-' + codeId, {
-            host: '://peerjs.com',
-            port: 443,
-            path: '/',
-            secure: true,
-            config: {'iceServers': [{ 'urls': 'stun:://google.com' }]}
-        });
-        
-        peer.on('open', () => {
-            document.getElementById('myCode').innerText = codeId;
-            status.innerText = "Ready to connect.";
-            status.style.color = "#888";
-        });
+        let activeRoom = null;
+        let ws = null;
 
-        peer.on('connection', (incomingConn) => {
-            conn = incomingConn;
-            startSync();
-        });
+        // Connect directly to a free, serverless public WebSocket network
+        // This bypasses external library script tag restrictions entirely
+        function connectWebSocket() {
+            ws = new WebSocket('wss://://hivemq.com');
+            ws.binaryType = 'arraybuffer';
 
-        peer.on('error', (err) => {
-            status.innerText = "Connection lost. Retrying...";
-            status.style.color = "#ff3b30";
-            console.error("PeerJS Error: ", err);
-        });
+            ws.onopen = () => {
+                status.innerText = "Ready to connect.";
+                status.style.color = "#888";
+                
+                // Send MQTT Protocol connect packet manually via raw bytes
+                const connectPacket = new Uint8Array([
+                    0x10, 0x14, // Connect header
+                    0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3c, // Protocol name/info
+                    0x00, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x31, 0x32 // Client ID
+                ]);
+                ws.send(connectPacket);
+                
+                // Subscribe to our own channel
+                subscribeToChannel(myCode);
+            };
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') return;
+                const bytes = new Uint8Array(event.data);
+                
+                // Look for payload markers inside raw packet bytes
+                if (bytes[0] === 0x30) { 
+                    try {
+                        const rawStr = new TextDecoder().decode(bytes);
+                        const jsonStart = rawStr.indexOf('{"type"');
+                        if (jsonStart !== -1) {
+                            const data = JSON.parse(rawStr.substring(jsonStart));
+                            
+                            if (data.type === 'handshake' && !activeRoom) {
+                                activeRoom = myCode;
+                                startSync();
+                            }
+                            if (data.sender !== myCode) {
+                                if (data.type === 'input') box.value = data.val;
+                                if (data.type === 'clear') box.value = "";
+                            }
+                        }
+                    } catch(e) {}
+                }
+            };
+
+            ws.onerror = () => {
+                status.innerText = "Network block detected. Reconnecting...";
+                status.style.color = "#ff3b30";
+            };
+
+            ws.onclose = () => {
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function subscribeToChannel(topicCode) {
+            const topic = "t/" + topicCode;
+            const tLen = topic.length;
+            const subPacket = new Uint8Array([
+                0x82, 5 + tLen, // Subscribe header
+                0x00, 0x01,     // Message ID
+                0x00, tLen,     // Topic length
+                ...new TextEncoder().encode(topic),
+                0x00            // QoS 0
+            ]);
+            if (ws.readyState === WebSocket.OPEN) ws.send(subPacket);
+        }
+
+        function publishMessage(topicCode, payload) {
+            const topic = "t/" + topicCode;
+            const tLen = topic.length;
+            const msgBytes = new TextEncoder().encode(JSON.stringify(payload));
+            const mLen = msgBytes.length;
+            
+            const pubHeader = new Uint8Array([
+                0x30, 2 + tLen + mLen, // Publish header
+                0x00, tLen,            // Topic length
+                ...new TextEncoder().encode(topic)
+            ]);
+            
+            const packet = new Uint8Array(pubHeader.length + msgBytes.length);
+            packet.set(pubHeader);
+            packet.set(msgBytes, pubHeader.length);
+            
+            if (ws.readyState === WebSocket.OPEN) ws.send(packet);
+        }
 
         function connectDevices() {
             const target = document.getElementById('targetCode').value.trim();
             if(!target) return;
-            status.innerText = "Connecting...";
-            conn = peer.connect('txt-share-' + target);
-            conn.on('open', startSync);
+            
+            activeRoom = target;
+            subscribeToChannel(activeRoom);
+            
+            // Notify the other device
+            publishMessage(activeRoom, { type: 'handshake' });
+            startSync();
         }
 
         function startSync() {
@@ -115,21 +183,29 @@
             status.style.color = "#00ff88";
             box.disabled = false;
             box.placeholder = "Type or paste text here...";
-
-            conn.on('data', (data) => {
-                if (data.type === 'input') box.value = data.val;
-                if (data.type === 'clear') box.value = "";
-            });
         }
 
         box.addEventListener('input', () => {
-            if (conn && conn.open) conn.send({ type: 'input', val: box.value });
+            if (activeRoom) {
+                publishMessage(activeRoom, {
+                    type: 'input',
+                    val: box.value,
+                    sender: myCode
+                });
+            }
         });
 
         function clearText() {
             box.value = "";
-            if (conn && conn.open) conn.send({ type: 'clear' });
+            if (activeRoom) {
+                publishMessage(activeRoom, {
+                    type: 'clear',
+                    sender: myCode
+                });
+            }
         }
+
+        connectWebSocket();
     </script>
 </body>
 </html>
