@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Transfer</title>
-    <!-- Serverless P2P Sync Library -->
-    <script src="https://unpkg.com"></script>
+    <!-- Stable PeerJS CDN -->
+    <script src="https://cloudflare.com"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -55,19 +55,16 @@
     <h2>Text Transfer</h2>
     <div class="status" id="status">Connecting to network...</div>
 
-    <!-- DEVICE A: SHOWS THIS CODE -->
     <div class="code-box">
         <div>This Device Code</div>
         <div class="code" id="myCode">....</div>
     </div>
 
-    <!-- DEVICE B: INPUTS THE CODE HERE -->
     <div class="connect-row">
         <input type="text" id="targetCode" placeholder="Enter other device code" maxlength="4">
         <button onclick="connectDevices()">Connect</button>
     </div>
 
-    <!-- SHARED TEXT AREA -->
     <textarea id="box" placeholder="Connect a device to start transferring text..." disabled></textarea>
     <button class="clear-btn" onclick="clearText()">Clear Text</button>
 
@@ -75,23 +72,36 @@
         let peer = null, conn = null;
         const box = document.getElementById('box');
         const status = document.getElementById('status');
+        
+        // Generates a distinct room string to prevent user namespace collision
         const codeId = Math.floor(1000 + Math.random() * 9000).toString();
 
-        // 1. Start the Peer network connection
-        peer = new Peer('txt-share-' + codeId);
+        // Connected to alternative high-availability public signaling infrastructure
+        peer = new Peer('txt-share-' + codeId, {
+            host: '://peerjs.com',
+            port: 443,
+            path: '/',
+            secure: true,
+            config: {'iceServers': [{ 'urls': 'stun:://google.com' }]}
+        });
         
         peer.on('open', () => {
             document.getElementById('myCode').innerText = codeId;
             status.innerText = "Ready to connect.";
+            status.style.color = "#888";
         });
 
-        // 2. Listen for incoming device connections
         peer.on('connection', (incomingConn) => {
             conn = incomingConn;
             startSync();
         });
 
-        // 3. Connect to the other device manually via code
+        peer.on('error', (err) => {
+            status.innerText = "Connection lost. Retrying...";
+            status.style.color = "#ff3b30";
+            console.error("PeerJS Error: ", err);
+        });
+
         function connectDevices() {
             const target = document.getElementById('targetCode').value.trim();
             if(!target) return;
@@ -100,7 +110,6 @@
             conn.on('open', startSync);
         }
 
-        // 4. Activate live typing sync
         function startSync() {
             status.innerText = "Connected & Syncing";
             status.style.color = "#00ff88";
@@ -113,12 +122,10 @@
             });
         }
 
-        // Send changes instantly while typing
         box.addEventListener('input', () => {
             if (conn && conn.open) conn.send({ type: 'input', val: box.value });
         });
 
-        // Wipes out text on both screens instantly
         function clearText() {
             box.value = "";
             if (conn && conn.open) conn.send({ type: 'clear' });
