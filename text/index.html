@@ -14,163 +14,111 @@
             color: #ffffff;
         }
         h2 { margin-bottom: 5px; }
-        .status { color: #888; font-size: 0.9rem; margin-bottom: 20px; transition: color 0.3s; }
-        .code-box {
+        .status { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+        .url-box {
             background: #1e1e1e;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            text-align: center;
+            word-break: break-all;
+            border: 1px dashed #444;
         }
-        .code { font-size: 2rem; font-weight: bold; color: #00ff88; letter-spacing: 2px; }
-        .connect-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        input, textarea {
+        .url-label { font-size: 0.8rem; color: #888; margin-bottom: 5px; }
+        .url-text { font-family: monospace; color: #00ff88; font-size: 0.95rem; }
+        textarea {
+            width: 100%;
+            height: 220px;
             background: #222;
             border: 1px solid #444;
             color: #fff;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             font-size: 1rem;
             box-sizing: border-box;
             outline: none;
+            resize: vertical;
         }
-        input { flex: 1; text-align: center; }
+        textarea:focus { border-color: #007ff7; }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
         button {
-            background: #007ff7;
-            color: white;
-            border: none;
-            padding: 10px 20px;
+            flex: 1;
+            padding: 12px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
+            border: none;
+            font-size: 1rem;
         }
-        textarea { width: 100%; height: 200px; resize: vertical; }
-        .clear-btn { background: #ff3b30; width: 100%; margin-top: 10px; }
+        .copy-btn { background: #007ff7; color: white; }
+        .clear-btn { background: #ff3b30; color: white; }
     </style>
 </head>
 <body>
 
     <h2>Text Transfer</h2>
-    <div class="status" id="status">Establishing connection...</div>
+    <div class="status">✅ 100% Offline & Security-Safe Mode</div>
 
-    <div class="code-box">
-        <div>This Device Code</div>
-        <div class="code" id="myCode">....</div>
+    <!-- SHARED TEXT AREA -->
+    <textarea id="box" placeholder="Type or paste your text here... The URL above will update instantly."></textarea>
+
+    <div class="btn-row">
+        <button class="copy-btn" onclick="copyLink()">📋 Copy Share Link</button>
+        <button class="clear-btn" onclick="clearText()">🗑️ Clear Text</button>
     </div>
 
-    <div class="connect-row">
-        <input type="text" id="targetCode" placeholder="Enter other device code" maxlength="4">
-        <button onclick="connectDevices()">Connect</button>
+    <p style="margin-top: 25px; margin-bottom: 5px; font-size: 0.9rem; color: #888;">Your Shareable URL:</p>
+    <div class="url-box">
+        <div class="url-text" id="shareUrl">Loading link...</div>
     </div>
-
-    <textarea id="box" placeholder="Connect a device to start transferring text..." disabled></textarea>
-    <button class="clear-btn" onclick="clearText()">Clear Text</button>
-
-    <!-- The entire communication engine is embedded directly below -->
-    <script>
-        /* Eclipse Paho MQTT JavaScript Client v1.0.3 inline package */
-        var Paho=function(){function e(e,t){var n=null;if("undefined"==typeof window)n=new require("ws")(e);else{var o=window.WebSocket||window.MozWebSocket;if(!o)throw new Error("WebSockets not supported");n=new o(e)}return n}function t(t,n,o,r){this.host=t,this.port=Number(n),this.path=o||"/mqtt",this.clientId=r||"paho_"+Math.random().toString(16).substr(2,8),this._ws=null,this._connected=!1,this.onConnectionLost=null,this.onMessageArrived=null}return t.prototype.connect=function(t){var n=this,o=(t.useSSL?"wss":"ws")+"://"+this.host+":"+this.port+this.path;try{this._ws=e(o),this._ws.binaryType="arraybuffer"}catch(r){return void(t.onFailure&&t.onFailure(r))}this._ws.onopen=function(){var e=new Uint8Array([16,12+n.clientId.length,0,4,77,81,84,84,4,2,0,60,0,n.clientId.length]);var o=new Uint8Array(e.length+n.clientId.length);o.set(e);for(var r=0;r<n.clientId.length;r++)o[e.length+r]=n.clientId.charCodeAt(r);n._ws.send(o),n._connected=!0,t.onSuccess&&t.onSuccess()},this._ws.onmessage=function(e){if(n.onMessageArrived){var t=new Uint8Array(e.data);if(t[0]===48){var o=t[3],r=new TextDecoder().decode(t.subarray(4+o));n.onMessageArrived({payloadString:r})}}},this._ws.onclose=function(){n._connected=!1,n.onConnectionLost&&n.onConnectionLost({errorCode:1})},this._ws.onerror=function(e){t.onFailure&&t.onFailure(e)}},t.prototype.subscribe=function(e){if(this._connected){var t=new TextEncoder().encode(e),n=new Uint8Array([130,5+t.length,0,1,0,t.length]);var o=new Uint8Array(n.length+t.length+1);o.set(n),o.set(t,n.length),o[o.length-1]=0,this._ws.send(o)}},t.prototype.unsubscribe=function(e){if(this._connected){var t=new TextEncoder().encode(e),n=new Uint8Array([162,5+t.length,0,1,0,t.length]);var o=new Uint8Array(n.length+t.length);o.set(n),o.set(t,n.length),this._ws.send(o)}},t.prototype.send=function(e,t){if(this._connected){var n=new TextEncoder().encode(e),o=new TextEncoder().encode(t);var r=new Uint8Array([48,2+n.length+o.length,0,n.length]);var i=new Uint8Array(r.length+n.length+o.length);i.set(r),i.set(n,r.length),i.set(o,r.length+n.length),this._ws.send(i)}},t.prototype.isConnected=function(){return this._connected},{MQTT:{Client:t}}}();
-    </script>
 
     <script>
         const box = document.getElementById('box');
-        const status = document.getElementById('status');
-        const myCodeDisplay = document.getElementById('myCode');
-        
-        const myCode = Math.floor(1000 + Math.random() * 9000).toString();
-        myCodeDisplay.innerText = myCode;
+        const shareUrl = document.getElementById('shareUrl');
 
-        let activeRoom = null;
-        let client = null;
-
-        function startClient() {
-            try {
-                // Connecting directly using native inline protocol execution maps
-                client = new Paho.MQTT.Client("://hivemq.com", 8884, "/mqtt", "txt_" + myCode);
-
-                client.onConnectionLost = (res) => {
-                    status.innerText = "Network dropped. Reconnecting...";
-                    status.style.color = "#ff3b30";
-                    setTimeout(startClient, 3000);
-                };
-
-                client.onMessageArrived = (message) => {
-                    try {
-                        const data = JSON.parse(message.payloadString);
-                        
-                        if (data.type === 'handshake' && data.sender !== myCode && !activeRoom) {
-                            activeRoom = myCode;
-                            startSync();
-                        }
-                        
-                        if (data.sender !== myCode) {
-                            if (data.type === 'input') box.value = data.val;
-                            if (data.type === 'clear') box.value = "";
-                        }
-                    } catch(e) {}
-                };
-
-                client.connect({
-                    onSuccess: () => {
-                        status.innerText = "Ready to connect.";
-                        status.style.color = "#888";
-                        client.subscribe("txtshare/" + myCode);
-                    },
-                    onFailure: (err) => {
-                        status.innerText = "Sync service busy. Retrying...";
-                        status.style.color = "#ff3b30";
-                        setTimeout(startClient, 4000);
-                    },
-                    useSSL: true
-                });
-            } catch(e) {
-                status.innerText = "System error initializing communication pipeline.";
+        // 1. Safe base64 decoding for Unicode, emojis, and special symbols
+        function decodeFromUrl() {
+            if (window.location.hash) {
+                try {
+                    const base64Str = window.location.hash.substring(1);
+                    const decodedText = decodeURIComponent(escape(atob(base64Str)));
+                    box.value = decodedText;
+                } catch (e) {
+                    console.error("Failed to parse URL text data:", e);
+                }
             }
+            updateLinkDisplay();
         }
 
-        function connectDevices() {
-            const target = document.getElementById('targetCode').value.trim();
-            if(!target || !client || !client.isConnected()) return;
-            
-            if (activeRoom) {
-                client.unsubscribe("txtshare/" + activeRoom);
+        // 2. Encode input text into the address bar hash component dynamically
+        function encodeToUrl() {
+            const text = box.value;
+            if (!text.trim()) {
+                window.history.replaceState(null, null, window.location.pathname);
+            } else {
+                const base64Str = btoa(unescape(encodeURIComponent(text)));
+                window.history.replaceState(null, null, "#" + base64Str);
             }
-            
-            activeRoom = target;
-            client.subscribe("txtshare/" + activeRoom);
-            
-            client.send("txtshare/" + activeRoom, JSON.stringify({ type: 'handshake', sender: myCode }));
-            startSync();
+            updateLinkDisplay();
         }
 
-        function startSync() {
-            status.innerText = "Connected & Syncing";
-            status.style.color = "#00ff88";
-            box.disabled = false;
-            box.placeholder = "Type or paste text here...";
+        function updateLinkDisplay() {
+            shareUrl.innerText = window.location.href;
         }
 
-        box.addEventListener('input', () => {
-            if (activeRoom && client && client.isConnected()) {
-                client.send("txtshare/" + activeRoom, JSON.stringify({
-                    type: 'input',
-                    val: box.value,
-                    sender: myCode
-                }));
-            }
-        });
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Share Link copied to clipboard!");
+        }
 
         function clearText() {
             box.value = "";
-            if (activeRoom && client && client.isConnected()) {
-                client.send("txtshare/" + activeRoom, JSON.stringify({
-                    type: 'clear',
-                    sender: myCode
-                }));
-            }
+            window.history.replaceState(null, null, window.location.pathname);
+            updateLinkDisplay();
         }
 
-        window.onload = startClient;
+        // Event triggers
+        box.addEventListener('input', encodeToUrl);
+        window.addEventListener('load', decodeFromUrl);
     </script>
 </body>
 </html>
