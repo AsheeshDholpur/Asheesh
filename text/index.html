@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Transfer</title>
+    <!-- Enterprise Grade Messaging Client -->
+    <script src="https://unpkg.com" crossorigin="anonymous"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -14,7 +16,7 @@
             color: #ffffff;
         }
         h2 { margin-bottom: 5px; }
-        .status { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+        .status { color: #888; font-size: 0.9rem; margin-bottom: 20px; transition: color 0.3s; }
         .code-box {
             background: #1e1e1e;
             padding: 15px;
@@ -51,7 +53,7 @@
 <body>
 
     <h2>Text Transfer</h2>
-    <div class="status" id="status">Connecting to sync relay...</div>
+    <div class="status" id="status">Establishing secure connection...</div>
 
     <div class="code-box">
         <div>This Device Code</div>
@@ -75,106 +77,66 @@
         myCodeDisplay.innerText = myCode;
 
         let activeRoom = null;
-        let ws = null;
+        let client = null;
 
-        // Connect directly to a free, serverless public WebSocket network
-        // This bypasses external library script tag restrictions entirely
-        function connectWebSocket() {
-            ws = new WebSocket('wss://hivemq.com');
-            ws.binaryType = 'arraybuffer';
-
-            ws.onopen = () => {
-                status.innerText = "Ready to connect.";
-                status.style.color = "#888";
-                
-                // Send MQTT Protocol connect packet manually via raw bytes
-                const connectPacket = new Uint8Array([
-                    0x10, 0x14, // Connect header
-                    0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3c, // Protocol name/info
-                    0x00, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x31, 0x32 // Client ID
-                ]);
-                ws.send(connectPacket);
-                
-                // Subscribe to our own channel
-                subscribeToChannel(myCode);
-            };
-
-            ws.onmessage = (event) => {
-                if (typeof event.data === 'string') return;
-                const bytes = new Uint8Array(event.data);
-                
-                // Look for payload markers inside raw packet bytes
-                if (bytes[0] === 0x30) { 
-                    try {
-                        const rawStr = new TextDecoder().decode(bytes);
-                        const jsonStart = rawStr.indexOf('{"type"');
-                        if (jsonStart !== -1) {
-                            const data = JSON.parse(rawStr.substring(jsonStart));
-                            
-                            if (data.type === 'handshake' && !activeRoom) {
-                                activeRoom = myCode;
-                                startSync();
-                            }
-                            if (data.sender !== myCode) {
-                                if (data.type === 'input') box.value = data.val;
-                                if (data.type === 'clear') box.value = "";
-                            }
-                        }
-                    } catch(e) {}
-                }
-            };
-
-            ws.onerror = () => {
-                status.innerText = "Network block detected. Reconnecting...";
+        function startClient() {
+            if (typeof Paho === 'undefined') {
+                status.innerText = "Network security block: CDN failed to load.";
                 status.style.color = "#ff3b30";
-            };
+                return;
+            }
 
-            ws.onclose = () => {
-                setTimeout(connectWebSocket, 3000);
-            };
+            // Using standard cloud relay configs with strict endpoint maps
+            const clientId = "txt_" + Math.random().toString(16).substr(2, 8);
+            client = new Paho.MQTT.Client("broker.hivemq.com", 8884, "/mqtt", clientId);
+
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+
+            client.connect({
+                onSuccess: onConnect,
+                onFailure: onFailure,
+                useSSL: true,
+                timeout: 10,
+                keepAliveInterval: 30
+            });
         }
 
-        function subscribeToChannel(topicCode) {
-            const topic = "t/" + topicCode;
-            const tLen = topic.length;
-            const subPacket = new Uint8Array([
-                0x82, 5 + tLen, // Subscribe header
-                0x00, 0x01,     // Message ID
-                0x00, tLen,     // Topic length
-                ...new TextEncoder().encode(topic),
-                0x00            // QoS 0
-            ]);
-            if (ws.readyState === WebSocket.OPEN) ws.send(subPacket);
+        function onConnect() {
+            status.innerText = "Ready to connect.";
+            status.style.color = "#888";
+            client.subscribe("txtshare/" + myCode);
         }
 
-        function publishMessage(topicCode, payload) {
-            const topic = "t/" + topicCode;
-            const tLen = topic.length;
-            const msgBytes = new TextEncoder().encode(JSON.stringify(payload));
-            const mLen = msgBytes.length;
-            
-            const pubHeader = new Uint8Array([
-                0x30, 2 + tLen + mLen, // Publish header
-                0x00, tLen,            // Topic length
-                ...new TextEncoder().encode(topic)
-            ]);
-            
-            const packet = new Uint8Array(pubHeader.length + msgBytes.length);
-            packet.set(pubHeader);
-            packet.set(msgBytes, pubHeader.length);
-            
-            if (ws.readyState === WebSocket.OPEN) ws.send(packet);
+        function onFailure(response) {
+            status.innerText = "Sync service busy. Retrying connection...";
+            status.style.color = "#ff3b30";
+            setTimeout(startClient, 4000);
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                status.innerText = "Network dropped. Reconnecting...";
+                status.style.color = "#ff3b30";
+                setTimeout(startClient, 3000);
+            }
         }
 
         function connectDevices() {
             const target = document.getElementById('targetCode').value.trim();
-            if(!target) return;
+            if(!target || !client || !client.isConnected()) return;
+            
+            if (activeRoom) {
+                client.unsubscribe("txtshare/" + activeRoom);
+            }
             
             activeRoom = target;
-            subscribeToChannel(activeRoom);
+            client.subscribe("txtshare/" + activeRoom);
             
-            // Notify the other device
-            publishMessage(activeRoom, { type: 'handshake' });
+            const message = new Paho.MQTT.Message(JSON.stringify({ type: 'handshake', sender: myCode }));
+            message.destinationName = "txtshare/" + activeRoom;
+            client.send(message);
+            
             startSync();
         }
 
@@ -185,27 +147,47 @@
             box.placeholder = "Type or paste text here...";
         }
 
+        function onMessageArrived(message) {
+            try {
+                const data = JSON.parse(message.payloadString);
+                
+                if (data.type === 'handshake' && data.sender !== myCode && !activeRoom) {
+                    activeRoom = myCode;
+                    startSync();
+                }
+                
+                if (data.sender !== myCode) {
+                    if (data.type === 'input') box.value = data.val;
+                    if (data.type === 'clear') box.value = "";
+                }
+            } catch(e) {}
+        }
+
         box.addEventListener('input', () => {
-            if (activeRoom) {
-                publishMessage(activeRoom, {
+            if (activeRoom && client && client.isConnected()) {
+                const message = new Paho.MQTT.Message(JSON.stringify({
                     type: 'input',
                     val: box.value,
                     sender: myCode
-                });
+                }));
+                message.destinationName = "txtshare/" + activeRoom;
+                client.send(message);
             }
         });
 
         function clearText() {
             box.value = "";
-            if (activeRoom) {
-                publishMessage(activeRoom, {
+            if (activeRoom && client && client.isConnected()) {
+                const message = new Paho.MQTT.Message(JSON.stringify({
                     type: 'clear',
                     sender: myCode
-                });
+                }));
+                message.destinationName = "txtshare/" + activeRoom;
+                client.send(message);
             }
         }
 
-        connectWebSocket();
+        window.onload = startClient;
     </script>
 </body>
 </html>
