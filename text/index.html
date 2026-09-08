@@ -8,244 +8,292 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
+    html, body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #fff;
-      color: #111;
-    }
-
-    main {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
+      width: 100%;
+      height: 100%;
     }
 
     textarea {
       width: 100%;
-      height: 350px;
-      resize: vertical;
-      padding: 15px;
-      font: inherit;
+      height: 100%;
+      box-sizing: border-box;
+      border: 0;
+      outline: 0;
+      resize: none;
+      padding: 20px;
+      font-family: Arial, sans-serif;
       font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    textarea:focus {
-      border-color: #777;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    input, button {
-      padding: 10px 14px;
-      font: inherit;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: white;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #f3f3f3;
-    }
-
-    #status {
-      margin-top: 12px;
-      color: #666;
-      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-<main>
-
-  <textarea id="text" placeholder="Type or paste text..."></textarea>
-
-  <div class="controls">
-    <input id="room" placeholder="Room ID">
-    <button id="connect">Connect</button>
-    <button id="send">Send</button>
-  </div>
-
-  <div id="status"></div>
-
-</main>
+<textarea id="text" placeholder="Type or paste text..."></textarea>
 
 <script>
-  // CHANGE THIS
-  const SIGNALING_URL = "https://YOUR-SIGNALING-SERVER-URL";
+  // PUT YOUR EXISTING SIGNALING SERVER URL HERE
+  const SIGNALING_URL = "https://webrtc-signaling-server-6uvt.onrender.com";
 
-  const textBox = document.getElementById("text");
-  const roomInput = document.getElementById("room");
-  const status = document.getElementById("status");
+  const ROOM = "asheesh-text";
 
   const socket = io(SIGNALING_URL);
 
-  let peerConnection = null;
-  let dataChannel = null;
-  let isInitiator = false;
+  const textBox = document.getElementById("text");
+
+  let peer = null;
+  let channel = null;
+  let myId = null;
+  let otherId = null;
+  let ready = false;
 
   const rtcConfig = {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }
+      {
+        urls: "stun:stun.l.google.com:19302"
+      }
     ]
   };
 
-  function setStatus(message) {
-    status.textContent = message;
-  }
 
-  function createPeerConnection() {
-    peerConnection = new RTCPeerConnection(rtcConfig);
+  // -----------------------------
+  // WebRTC
+  // -----------------------------
 
-    peerConnection.onicecandidate = event => {
-      if (event.candidate) {
-        socket.emit("signal", {
-          room: roomInput.value,
+  function createPeer() {
+
+    peer = new RTCPeerConnection(rtcConfig);
+
+    peer.onicecandidate = event => {
+
+      if (!event.candidate) return;
+
+      socket.emit("signal", {
+        room: ROOM,
+        data: {
+          type: "ice",
           candidate: event.candidate
-        });
+        }
+      });
+    };
+
+
+    peer.ondatachannel = event => {
+
+      channel = event.channel;
+
+      setupChannel();
+    };
+
+
+    peer.onconnectionstatechange = () => {
+
+      if (peer.connectionState === "connected") {
+        ready = true;
       }
-    };
 
-    peerConnection.onconnectionstatechange = () => {
-      setStatus("Connection: " + peerConnection.connectionState);
-    };
-
-    peerConnection.ondatachannel = event => {
-      dataChannel = event.channel;
-
-      dataChannel.onopen = () => {
-        setStatus("Connected");
-      };
-
-      dataChannel.onmessage = event => {
-        textBox.value = event.data;
-      };
+      if (
+        peer.connectionState === "failed" ||
+        peer.connectionState === "closed" ||
+        peer.connectionState === "disconnected"
+      ) {
+        ready = false;
+      }
     };
   }
 
-  document.getElementById("connect").onclick = async () => {
 
-    const room = roomInput.value.trim();
+  function setupChannel() {
 
-    if (!room) {
-      setStatus("Enter a room ID");
-      return;
-    }
+    channel.onopen = () => {
 
-    createPeerConnection();
+      ready = true;
 
-    socket.emit("join", room);
-
-    setStatus("Connecting...");
-
-    // Wait briefly to determine whether this browser
-    // should create the offer.
-    setTimeout(async () => {
-
-      if (isInitiator) {
-        dataChannel = peerConnection.createDataChannel("text");
-
-        dataChannel.onopen = () => {
-          setStatus("Connected");
-        };
-
-        const offer = await peerConnection.createOffer();
-
-        await peerConnection.setLocalDescription(offer);
-
-        socket.emit("signal", {
-          room,
-          offer: peerConnection.localDescription
-        });
+      // Send current text to the other browser
+      if (textBox.value) {
+        channel.send(textBox.value);
       }
+    };
 
-    }, 500);
-  };
 
-  document.getElementById("send").onclick = () => {
+    channel.onmessage = event => {
 
-    if (!dataChannel || dataChannel.readyState !== "open") {
-      setStatus("Not connected");
-      return;
+      // Prevent overwriting while the user is typing
+      textBox.value = event.data;
+    };
+
+
+    channel.onclose = () => {
+      ready = false;
+    };
+  }
+
+
+  async function becomeInitiator() {
+
+    if (!peer) {
+      createPeer();
     }
 
-    dataChannel.send(textBox.value);
+    channel = peer.createDataChannel("text");
 
-    setStatus("Sent");
-  };
+    setupChannel();
+
+    const offer = await peer.createOffer();
+
+    await peer.setLocalDescription(offer);
+
+    socket.emit("signal", {
+      room: ROOM,
+      data: {
+        type: "offer",
+        offer: peer.localDescription
+      }
+    });
+  }
+
+
+  // -----------------------------
+  // Socket.IO
+  // -----------------------------
 
   socket.on("connect", () => {
-    setStatus("Ready");
+
+    myId = socket.id;
+
+    createPeer();
+
+    // Everyone joins the same private room
+    socket.emit("join", ROOM);
+
+    // Tell the other browser who we are
+    socket.emit("signal", {
+      room: ROOM,
+      data: {
+        type: "hello",
+        id: myId
+      }
+    });
   });
+
 
   socket.on("signal", async data => {
 
-    if (!peerConnection) return;
+    if (!data) return;
 
-    if (data.offer) {
 
-      await peerConnection.setRemoteDescription(
+    // -----------------------------
+    // Detect the other browser
+    // -----------------------------
+
+    if (data.type === "hello") {
+
+      otherId = data.id;
+
+      /*
+        The browser with the smaller Socket.IO ID
+        becomes the initiator.
+
+        This avoids both browsers creating offers
+        simultaneously.
+      */
+
+      if (myId < otherId) {
+        await becomeInitiator();
+      }
+
+      return;
+    }
+
+
+    // -----------------------------
+    // Receive offer
+    // -----------------------------
+
+    if (data.type === "offer") {
+
+      if (!peer) {
+        createPeer();
+      }
+
+      await peer.setRemoteDescription(
         new RTCSessionDescription(data.offer)
       );
 
-      const answer = await peerConnection.createAnswer();
+      const answer = await peer.createAnswer();
 
-      await peerConnection.setLocalDescription(answer);
+      await peer.setLocalDescription(answer);
 
       socket.emit("signal", {
-        room: roomInput.value,
-        answer: peerConnection.localDescription
+        room: ROOM,
+        data: {
+          type: "answer",
+          answer: peer.localDescription
+        }
       });
+
+      return;
     }
 
-    if (data.answer) {
 
-      await peerConnection.setRemoteDescription(
+    // -----------------------------
+    // Receive answer
+    // -----------------------------
+
+    if (data.type === "answer") {
+
+      await peer.setRemoteDescription(
         new RTCSessionDescription(data.answer)
       );
+
+      return;
     }
 
-    if (data.candidate) {
+
+    // -----------------------------
+    // Receive ICE candidate
+    // -----------------------------
+
+    if (data.type === "ice") {
 
       try {
-        await peerConnection.addIceCandidate(
+
+        await peer.addIceCandidate(
           new RTCIceCandidate(data.candidate)
         );
+
       } catch (error) {
-        console.error(error);
+
+        console.error("ICE error:", error);
+
       }
+
+      return;
     }
+
   });
 
-  /*
-    The signaling server should tell the first
-    browser in the room that it is the initiator.
 
-    If your existing server does not send such
-    an event, the signaling server needs a tiny
-    change to support this.
-  */
+  // -----------------------------
+  // Live text sharing
+  // -----------------------------
 
-  socket.on("initiator", () => {
-    isInitiator = true;
+  let typingTimer;
+
+  textBox.addEventListener("input", () => {
+
+    if (!ready || !channel) return;
+
+    if (channel.readyState !== "open") return;
+
+    clearTimeout(typingTimer);
+
+    typingTimer = setTimeout(() => {
+
+      channel.send(textBox.value);
+
+    }, 30);
   });
 
 </script>
