@@ -80,7 +80,7 @@
         // Connect directly to a free, serverless public WebSocket network
         // This bypasses external library script tag restrictions entirely
         function connectWebSocket() {
-            ws = new WebSocket('wss://://hivemq.com');
+            ws = new WebSocket('wss://hivemq.com');
             ws.binaryType = 'arraybuffer';
 
             ws.onopen = () => {
