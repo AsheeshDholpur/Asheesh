@@ -60,56 +60,57 @@
 
 <body>
 
-  <div id="status">
-    <span id="dot"></span>
-    <span id="statusText">Connecting...</span>
-  </div>
+<div id="status">
+  <span id="dot"></span>
+  <span id="statusText">Connecting...</span>
+</div>
 
-  <textarea
-    id="text"
-    placeholder="Type or paste text..."
-  ></textarea>
+<textarea
+  id="text"
+  placeholder="Type or paste text..."
+></textarea>
 
 
 <script>
 
-  /*
-   * Your existing signaling server.
-   * Nothing is changed on that server.
-   */
+  // Your existing signaling server
   const SIGNALING_URL =
     "https://webrtc-signaling-server-6uvt.onrender.com";
 
-
-  /*
-   * Both browsers use the same room.
-   * This is intended for your personal use.
-   */
+  // Same room for your personal two-browser sharing
   const ROOM = "asheesh-text";
 
 
   const socket = io(SIGNALING_URL);
 
+  const textBox =
+    document.getElementById("text");
 
-  const textBox = document.getElementById("text");
-  const statusText = document.getElementById("statusText");
-  const dot = document.getElementById("dot");
+  const statusText =
+    document.getElementById("statusText");
+
+  const dot =
+    document.getElementById("dot");
 
 
   let peer = null;
   let channel = null;
 
-  let connected = false;
-  let otherPeerFound = false;
-
   let myId = null;
   let otherId = null;
 
+  let connected = false;
+  let remoteDescriptionSet = false;
+
+  // ICE candidates can arrive before the
+  // remote description. Keep them here.
+  let pendingCandidates = [];
+
 
   /*
-   * -------------------------
+   * -----------------------------
    * STATUS
-   * -------------------------
+   * -----------------------------
    */
 
   function status(message, color) {
@@ -122,30 +123,45 @@
 
 
   /*
-   * -------------------------
-   * CREATE WEBRTC PEER
-   * -------------------------
+   * -----------------------------
+   * CREATE PEER
+   * -----------------------------
    */
 
   function createPeer() {
 
     if (peer) {
-      return;
+      return peer;
     }
+
 
     peer = new RTCPeerConnection({
 
       iceServers: [
+
         {
           urls: "stun:stun.l.google.com:19302"
+        },
+
+        {
+          urls: "stun:stun1.l.google.com:19302"
+        },
+
+        {
+          urls: "stun:stun2.l.google.com:19302"
+        },
+
+        {
+          urls: "stun:stun.cloudflare.com:3478"
         }
+
       ]
 
     });
 
 
     /*
-     * ICE candidates
+     * ICE candidate
      */
 
     peer.onicecandidate = event => {
@@ -154,16 +170,40 @@
         return;
       }
 
+      console.log(
+        "[WEBRTC] Sending ICE candidate"
+      );
+
       socket.emit("signal", {
 
         room: ROOM,
 
         data: {
+
           type: "ice",
+
           candidate: event.candidate
+
         }
 
       });
+
+    };
+
+
+    /*
+     * DataChannel received
+     */
+
+    peer.ondatachannel = event => {
+
+      console.log(
+        "[WEBRTC] DataChannel received"
+      );
+
+      channel = event.channel;
+
+      setupChannel();
 
     };
 
@@ -175,22 +215,38 @@
     peer.onconnectionstatechange = () => {
 
       console.log(
-        "WebRTC:",
+        "[WEBRTC] Connection:",
         peer.connectionState
       );
 
 
-      if (peer.connectionState === "connecting") {
+      if (
+        peer.connectionState === "new"
+      ) {
 
         status(
-          "Connecting to browser...",
+          "Connecting...",
           "#f0a000"
         );
 
       }
 
 
-      if (peer.connectionState === "connected") {
+      if (
+        peer.connectionState === "connecting"
+      ) {
+
+        status(
+          "Connecting...",
+          "#f0a000"
+        );
+
+      }
+
+
+      if (
+        peer.connectionState === "connected"
+      ) {
 
         connected = true;
 
@@ -202,31 +258,41 @@
       }
 
 
-      if (peer.connectionState === "disconnected") {
+      if (
+        peer.connectionState === "disconnected"
+      ) {
 
         connected = false;
 
         status(
-          "Disconnected",
-          "#d33"
+          "Connection interrupted",
+          "#d88a00"
         );
 
       }
 
 
-      if (peer.connectionState === "failed") {
+      if (
+        peer.connectionState === "failed"
+      ) {
 
         connected = false;
 
         status(
-          "Connection failed",
+          "WebRTC connection failed",
           "#d33"
+        );
+
+        console.error(
+          "[WEBRTC] Connection failed"
         );
 
       }
 
 
-      if (peer.connectionState === "closed") {
+      if (
+        peer.connectionState === "closed"
+      ) {
 
         connected = false;
 
@@ -241,26 +307,27 @@
 
 
     /*
-     * Receive DataChannel from other browser
+     * ICE connection state
      */
 
-    peer.ondatachannel = event => {
+    peer.oniceconnectionstatechange = () => {
 
-      console.log("DataChannel received");
-
-      channel = event.channel;
-
-      setupChannel();
+      console.log(
+        "[WEBRTC] ICE:",
+        peer.iceConnectionState
+      );
 
     };
 
+
+    return peer;
   }
 
 
   /*
-   * -------------------------
+   * -----------------------------
    * DATA CHANNEL
-   * -------------------------
+   * -----------------------------
    */
 
   function setupChannel() {
@@ -272,7 +339,9 @@
 
     channel.onopen = () => {
 
-      console.log("DataChannel opened");
+      console.log(
+        "[WEBRTC] DataChannel OPEN"
+      );
 
       connected = true;
 
@@ -283,12 +352,14 @@
 
 
       /*
-       * Send current text when connection opens.
+       * Send existing text immediately.
        */
 
-      if (textBox.value.length > 0) {
+      if (textBox.value) {
 
-        channel.send(textBox.value);
+        channel.send(
+          textBox.value
+        );
 
       }
 
@@ -297,7 +368,9 @@
 
     channel.onmessage = event => {
 
-      console.log("Text received");
+      console.log(
+        "[WEBRTC] Text received"
+      );
 
       textBox.value = event.data;
 
@@ -315,34 +388,54 @@
 
     };
 
+
+    channel.onerror = error => {
+
+      console.error(
+        "[WEBRTC] DataChannel error:",
+        error
+      );
+
+    };
+
   }
 
 
   /*
-   * -------------------------
-   * CREATE OFFER
-   * -------------------------
+   * -----------------------------
+   * INITIATOR
+   * -----------------------------
    */
 
   async function createOffer() {
 
-    console.log("Creating offer");
+    console.log(
+      "[WEBRTC] Creating offer"
+    );
 
-    createPeer();
 
+    const pc = createPeer();
+
+
+    /*
+     * Only the initiator creates
+     * the DataChannel.
+     */
 
     channel =
-      peer.createDataChannel("text");
+      pc.createDataChannel("text");
 
 
     setupChannel();
 
 
     const offer =
-      await peer.createOffer();
+      await pc.createOffer();
 
 
-    await peer.setLocalDescription(offer);
+    await pc.setLocalDescription(
+      offer
+    );
 
 
     socket.emit("signal", {
@@ -350,8 +443,12 @@
       room: ROOM,
 
       data: {
+
         type: "offer",
-        offer: peer.localDescription
+
+        offer:
+          pc.localDescription
+
       }
 
     });
@@ -366,17 +463,18 @@
 
 
   /*
-   * -------------------------
+   * -----------------------------
    * SOCKET CONNECTED
-   * -------------------------
+   * -----------------------------
    */
 
   socket.on("connect", () => {
 
     myId = socket.id;
 
+
     console.log(
-      "Socket connected:",
+      "[SOCKET] Connected:",
       myId
     );
 
@@ -388,7 +486,7 @@
 
 
     /*
-     * Join the same room.
+     * Join room.
      */
 
     socket.emit(
@@ -398,7 +496,8 @@
 
 
     /*
-     * Announce ourselves.
+     * Tell existing browser that
+     * we have arrived.
      */
 
     socket.emit("signal", {
@@ -419,9 +518,9 @@
 
 
   /*
-   * -------------------------
+   * -----------------------------
    * SOCKET DISCONNECTED
-   * -------------------------
+   * -----------------------------
    */
 
   socket.on("disconnect", () => {
@@ -437,36 +536,47 @@
 
 
   /*
-   * -------------------------
-   * SIGNALING MESSAGES
-   * -------------------------
+   * -----------------------------
+   * SIGNAL
+   * -----------------------------
    */
 
   socket.on("signal", async data => {
 
+    if (!data) {
+      return;
+    }
+
+
     console.log(
-      "Signal received:",
+      "[SIGNAL]",
       data.type
     );
 
 
     /*
-     * Another browser joined.
+     * ---------------------------
+     * HELLO
+     * ---------------------------
      */
 
     if (data.type === "hello") {
 
-      otherPeerFound = true;
-
       otherId = data.id;
 
 
+      console.log(
+        "[SIGNAL] Other browser:",
+        otherId
+      );
+
+
       /*
-       * Deterministically choose ONE
-       * browser to create the offer.
+       * Deterministically select
+       * ONE browser as initiator.
        *
-       * The browser with the smaller
-       * Socket.IO ID becomes initiator.
+       * Only the browser with the
+       * smaller ID creates the offer.
        */
 
       if (myId < otherId) {
@@ -482,24 +592,29 @@
 
       }
 
+
       return;
     }
 
 
     /*
-     * -------------------------
+     * ---------------------------
      * OFFER
-     * -------------------------
+     * ---------------------------
      */
 
     if (data.type === "offer") {
 
-      console.log("Offer received");
+      console.log(
+        "[WEBRTC] Offer received"
+      );
 
-      createPeer();
+
+      const pc =
+        createPeer();
 
 
-      await peer.setRemoteDescription(
+      await pc.setRemoteDescription(
 
         new RTCSessionDescription(
           data.offer
@@ -508,11 +623,22 @@
       );
 
 
+      remoteDescriptionSet = true;
+
+
+      /*
+       * Add any ICE candidates
+       * that arrived early.
+       */
+
+      await flushCandidates();
+
+
       const answer =
-        await peer.createAnswer();
+        await pc.createAnswer();
 
 
-      await peer.setLocalDescription(
+      await pc.setLocalDescription(
         answer
       );
 
@@ -526,7 +652,7 @@
           type: "answer",
 
           answer:
-            peer.localDescription
+            pc.localDescription
 
         }
 
@@ -534,7 +660,7 @@
 
 
       status(
-        "Connecting to browser...",
+        "Connecting...",
         "#f0a000"
       );
 
@@ -544,14 +670,21 @@
 
 
     /*
-     * -------------------------
+     * ---------------------------
      * ANSWER
-     * -------------------------
+     * ---------------------------
      */
 
     if (data.type === "answer") {
 
-      console.log("Answer received");
+      console.log(
+        "[WEBRTC] Answer received"
+      );
+
+
+      if (!peer) {
+        return;
+      }
 
 
       await peer.setRemoteDescription(
@@ -563,17 +696,43 @@
       );
 
 
+      remoteDescriptionSet = true;
+
+
+      await flushCandidates();
+
+
       return;
     }
 
 
     /*
-     * -------------------------
-     * ICE
-     * -------------------------
+     * ---------------------------
+     * ICE CANDIDATE
+     * ---------------------------
      */
 
     if (data.type === "ice") {
+
+      console.log(
+        "[WEBRTC] ICE candidate received"
+      );
+
+
+      /*
+       * If remote description isn't
+       * ready yet, save the candidate.
+       */
+
+      if (!remoteDescriptionSet) {
+
+        pendingCandidates.push(
+          data.candidate
+        );
+
+        return;
+      }
+
 
       try {
 
@@ -588,7 +747,59 @@
       } catch (error) {
 
         console.error(
-          "ICE error:",
+          "[WEBRTC] ICE candidate error:",
+          error
+        );
+
+      }
+
+
+      return;
+    }
+
+  });
+
+
+  /*
+   * -----------------------------
+   * FLUSH ICE CANDIDATES
+   * -----------------------------
+   */
+
+  async function flushCandidates() {
+
+    if (!peer) {
+      return;
+    }
+
+
+    if (!remoteDescriptionSet) {
+      return;
+    }
+
+
+    while (
+      pendingCandidates.length > 0
+    ) {
+
+      const candidate =
+        pendingCandidates.shift();
+
+
+      try {
+
+        await peer.addIceCandidate(
+
+          new RTCIceCandidate(
+            candidate
+          )
+
+        );
+
+      } catch (error) {
+
+        console.error(
+          "[WEBRTC] Queued ICE error:",
           error
         );
 
@@ -596,13 +807,13 @@
 
     }
 
-  });
+  }
 
 
   /*
-   * -------------------------
-   * LIVE TEXT TRANSFER
-   * -------------------------
+   * -----------------------------
+   * LIVE TEXT
+   * -----------------------------
    */
 
   let typingTimer = null;
@@ -622,7 +833,9 @@
       }
 
 
-      if (channel.readyState !== "open") {
+      if (
+        channel.readyState !== "open"
+      ) {
         return;
       }
 
@@ -635,9 +848,16 @@
       typingTimer = setTimeout(
         () => {
 
-          channel.send(
-            textBox.value
-          );
+          if (
+            channel &&
+            channel.readyState === "open"
+          ) {
+
+            channel.send(
+              textBox.value
+            );
+
+          }
 
         },
         30
