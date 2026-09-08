@@ -1,124 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Transfer</title>
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            max-width: 500px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #121212;
-            color: #ffffff;
-        }
-        h2 { margin-bottom: 5px; }
-        .status { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
-        .url-box {
-            background: #1e1e1e;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            word-break: break-all;
-            border: 1px dashed #444;
-        }
-        .url-label { font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-        .url-text { font-family: monospace; color: #00ff88; font-size: 0.95rem; }
-        textarea {
-            width: 100%;
-            height: 220px;
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            outline: none;
-            resize: vertical;
-        }
-        textarea:focus { border-color: #007ff7; }
-        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
-        button {
-            flex: 1;
-            padding: 12px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            border: none;
-            font-size: 1rem;
-        }
-        .copy-btn { background: #007ff7; color: white; }
-        .clear-btn { background: #ff3b30; color: white; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text</title>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #111;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 350px;
+      resize: vertical;
+      padding: 15px;
+      font: inherit;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #777;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    input, button {
+      padding: 10px 14px;
+      font: inherit;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: white;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f3f3f3;
+    }
+
+    #status {
+      margin-top: 12px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
 </head>
+
 <body>
 
-    <h2>Text Transfer</h2>
-    <div class="status">✅ 100% Offline & Security-Safe Mode</div>
+<main>
 
-    <!-- SHARED TEXT AREA -->
-    <textarea id="box" placeholder="Type or paste your text here... The URL above will update instantly."></textarea>
+  <textarea id="text" placeholder="Type or paste text..."></textarea>
 
-    <div class="btn-row">
-        <button class="copy-btn" onclick="copyLink()">📋 Copy Share Link</button>
-        <button class="clear-btn" onclick="clearText()">🗑️ Clear Text</button>
-    </div>
+  <div class="controls">
+    <input id="room" placeholder="Room ID">
+    <button id="connect">Connect</button>
+    <button id="send">Send</button>
+  </div>
 
-    <p style="margin-top: 25px; margin-bottom: 5px; font-size: 0.9rem; color: #888;">Your Shareable URL:</p>
-    <div class="url-box">
-        <div class="url-text" id="shareUrl">Loading link...</div>
-    </div>
+  <div id="status"></div>
 
-    <script>
-        const box = document.getElementById('box');
-        const shareUrl = document.getElementById('shareUrl');
+</main>
 
-        // 1. Safe base64 decoding for Unicode, emojis, and special symbols
-        function decodeFromUrl() {
-            if (window.location.hash) {
-                try {
-                    const base64Str = window.location.hash.substring(1);
-                    const decodedText = decodeURIComponent(escape(atob(base64Str)));
-                    box.value = decodedText;
-                } catch (e) {
-                    console.error("Failed to parse URL text data:", e);
-                }
-            }
-            updateLinkDisplay();
-        }
+<script>
+  // CHANGE THIS
+  const SIGNALING_URL = "https://YOUR-SIGNALING-SERVER-URL";
 
-        // 2. Encode input text into the address bar hash component dynamically
-        function encodeToUrl() {
-            const text = box.value;
-            if (!text.trim()) {
-                window.history.replaceState(null, null, window.location.pathname);
-            } else {
-                const base64Str = btoa(unescape(encodeURIComponent(text)));
-                window.history.replaceState(null, null, "#" + base64Str);
-            }
-            updateLinkDisplay();
-        }
+  const textBox = document.getElementById("text");
+  const roomInput = document.getElementById("room");
+  const status = document.getElementById("status");
 
-        function updateLinkDisplay() {
-            shareUrl.innerText = window.location.href;
-        }
+  const socket = io(SIGNALING_URL);
 
-        function copyLink() {
-            navigator.clipboard.writeText(window.location.href);
-            alert("Share Link copied to clipboard!");
-        }
+  let peerConnection = null;
+  let dataChannel = null;
+  let isInitiator = false;
 
-        function clearText() {
-            box.value = "";
-            window.history.replaceState(null, null, window.location.pathname);
-            updateLinkDisplay();
-        }
+  const rtcConfig = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" }
+    ]
+  };
 
-        // Event triggers
-        box.addEventListener('input', encodeToUrl);
-        window.addEventListener('load', decodeFromUrl);
-    </script>
+  function setStatus(message) {
+    status.textContent = message;
+  }
+
+  function createPeerConnection() {
+    peerConnection = new RTCPeerConnection(rtcConfig);
+
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        socket.emit("signal", {
+          room: roomInput.value,
+          candidate: event.candidate
+        });
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      setStatus("Connection: " + peerConnection.connectionState);
+    };
+
+    peerConnection.ondatachannel = event => {
+      dataChannel = event.channel;
+
+      dataChannel.onopen = () => {
+        setStatus("Connected");
+      };
+
+      dataChannel.onmessage = event => {
+        textBox.value = event.data;
+      };
+    };
+  }
+
+  document.getElementById("connect").onclick = async () => {
+
+    const room = roomInput.value.trim();
+
+    if (!room) {
+      setStatus("Enter a room ID");
+      return;
+    }
+
+    createPeerConnection();
+
+    socket.emit("join", room);
+
+    setStatus("Connecting...");
+
+    // Wait briefly to determine whether this browser
+    // should create the offer.
+    setTimeout(async () => {
+
+      if (isInitiator) {
+        dataChannel = peerConnection.createDataChannel("text");
+
+        dataChannel.onopen = () => {
+          setStatus("Connected");
+        };
+
+        const offer = await peerConnection.createOffer();
+
+        await peerConnection.setLocalDescription(offer);
+
+        socket.emit("signal", {
+          room,
+          offer: peerConnection.localDescription
+        });
+      }
+
+    }, 500);
+  };
+
+  document.getElementById("send").onclick = () => {
+
+    if (!dataChannel || dataChannel.readyState !== "open") {
+      setStatus("Not connected");
+      return;
+    }
+
+    dataChannel.send(textBox.value);
+
+    setStatus("Sent");
+  };
+
+  socket.on("connect", () => {
+    setStatus("Ready");
+  });
+
+  socket.on("signal", async data => {
+
+    if (!peerConnection) return;
+
+    if (data.offer) {
+
+      await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(data.offer)
+      );
+
+      const answer = await peerConnection.createAnswer();
+
+      await peerConnection.setLocalDescription(answer);
+
+      socket.emit("signal", {
+        room: roomInput.value,
+        answer: peerConnection.localDescription
+      });
+    }
+
+    if (data.answer) {
+
+      await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(data.answer)
+      );
+    }
+
+    if (data.candidate) {
+
+      try {
+        await peerConnection.addIceCandidate(
+          new RTCIceCandidate(data.candidate)
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
+  /*
+    The signaling server should tell the first
+    browser in the room that it is the initiator.
+
+    If your existing server does not send such
+    an event, the signaling server needs a tiny
+    change to support this.
+  */
+
+  socket.on("initiator", () => {
+    isInitiator = true;
+  });
+
+</script>
+
 </body>
 </html>
