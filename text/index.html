@@ -55,6 +55,34 @@
       font-size: 16px;
       line-height: 1.5;
     }
+
+    #status {
+  height: 36px;
+  padding: 4px 14px;
+  font-size: 13px;
+  color: #555;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+
+  display: flex;
+  align-items: center;
+}
+
+#buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 30px;
+}
+
+#buttons button {
+  padding: 5px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+}
+
   </style>
 </head>
 
@@ -63,6 +91,11 @@
 <div id="status">
   <span id="dot"></span>
   <span id="statusText">Connecting...</span>
+
+  <div id="buttons">
+    <button id="pasteBtn">Paste</button>
+    <button id="copyBtn">Copy</button>
+  </div>
 </div>
 
 <textarea
@@ -850,6 +883,33 @@
 
     }
   );
+
+  const pasteBtn = document.getElementById("pasteBtn");
+const copyBtn = document.getElementById("copyBtn");
+
+pasteBtn.addEventListener("click", async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+
+    textBox.value = text;
+
+    // Trigger your existing live-sync code
+    textBox.dispatchEvent(new Event("input"));
+
+  } catch (error) {
+    console.error("Paste failed:", error);
+  }
+});
+
+
+copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(textBox.value);
+
+  } catch (error) {
+    console.error("Copy failed:", error);
+  }
+});
 
 </script>
 
