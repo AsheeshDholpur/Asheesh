@@ -83,6 +83,33 @@
   border-radius: 4px;
 }
 
+    body.dark {
+  background: #1e1e1e;
+  color: #ddd;
+}
+
+body.dark #status {
+  background: #252525;
+  color: #ccc;
+  border-bottom-color: #444;
+}
+
+body.dark textarea {
+  background: #1e1e1e;
+  color: #ddd;
+}
+
+body.dark #buttons button {
+  background: #333;
+  color: #eee;
+  border-color: #555;
+}
+
+#themeBtn {
+  width: 30px;
+  padding: 5px 0 !important;
+}
+
   </style>
 </head>
 
@@ -95,6 +122,7 @@
   <div id="buttons">
     <button id="pasteBtn">Paste</button>
     <button id="copyBtn">Copy</button>
+    <button id="themeBtn" title="Toggle dark mode">🌙</button>
   </div>
 </div>
 
@@ -909,6 +937,22 @@ copyBtn.addEventListener("click", async () => {
   } catch (error) {
     console.error("Copy failed:", error);
   }
+});
+
+  const themeBtn = document.getElementById("themeBtn");
+
+themeBtn.addEventListener("click", () => {
+
+  document.body.classList.toggle("dark");
+
+  if (document.body.classList.contains("dark")) {
+    themeBtn.textContent = "☀️";
+    themeBtn.title = "Switch to light mode";
+  } else {
+    themeBtn.textContent = "🌙";
+    themeBtn.title = "Switch to dark mode";
+  }
+
 });
 
 </script>
