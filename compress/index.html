@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelCompress Pro - Strict Range KB File Size Compressor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF.js for rendering PDFs client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- pdf-lib for generating compressed PDFs client-side -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- JSZip for batch downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .drag-active { border-color: #6366f1 !important; background-color: rgba(99, 102, 241, 0.05); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
+
+    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                    <i class="fa-solid fa-compress text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">PixelCompress <span class="text-indigo-400 font-extrabold text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 ml-1">PRO</span></h1>
+                    <p class="text-xs text-slate-400">Strict Range KB Compression for Images & PDFs</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center text-xs font-medium bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span> 100% Client-Side Privacy
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- Hero Section / Settings Bar -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Left 2 Cols: Upload Zone -->
+            <div class="lg:col-span-2 flex flex-col">
+                <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 bg-slate-900/50 hover:bg-slate-900 flex-grow flex flex-col items-center justify-center relative group">
+                    <input type="file" id="file-input" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" multiple accept="image/jpeg,image/png,image/webp,application/pdf">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-600/10 text-indigo-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 border border-indigo-500/20">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-200 mb-1">Drag & Drop images or PDFs here</h3>
+                    <p class="text-sm text-slate-400 mb-4">Supports JPG, PNG, WEBP, and PDF files (Multiple files allowed)</p>
+                    <button type="button" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30">
+                        Browse Files
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Col: Target Settings Control Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-bold text-base text-slate-200 flex items-center">
+                            <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Size Range Settings (KB)
+                        </h2>
+                    </div>
+
+                    <!-- Strict Range Inputs -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Min Size (KB)</label>
+                            <input type="number" id="min-kb" value="80" min="5" max="50000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-bold focus:outline-none focus:border-indigo-500 transition text-base">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Max Size (KB)</label>
+                            <input type="number" id="max-kb" value="150" min="10" max="50000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-bold focus:outline-none focus:border-indigo-500 transition text-base">
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4 flex items-center bg-indigo-500/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-300">
+                        <i class="fa-solid fa-circle-info mr-2 shrink-0"></i> Compressed output file size will be guaranteed within this strict KB bracket.
+                    </p>
+
+                    <!-- Quick Preset Buttons -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Quick Range Presets</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="setPreset(20, 50)" class="preset-btn py-2 bg-slate-950 border border-slate-800 hover:border-indigo-500 text-xs font-semibold rounded-lg text-slate-300 transition">20 - 50 KB</button>
+                            <button type="button" onclick="setPreset(50, 100)" class="preset-btn py-2 bg-slate-950 border border-slate-800 hover:border-indigo-500 text-xs font-semibold rounded-lg text-slate-300 transition">50 - 100 KB</button>
+                            <button type="button" onclick="setPreset(100, 200)" class="preset-btn py-2 bg-slate-950 border border-slate-800 hover:border-indigo-500 text-xs font-semibold rounded-lg text-slate-300 transition">100 - 200 KB</button>
+                        </div>
+                    </div>
+
+                    <!-- Output Format Choice for Images -->
+                    <div class="mb-2">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Image Output Format</label>
+                        <select id="output-format" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition">
+                            <option value="original">Keep Original Format (Fallback JPEG)</option>
+                            <option value="image/jpeg">Force JPEG (Best for photos)</option>
+                            <option value="image/webp">Force WebP (Superior compression)</option>
+                            <option value="image/png">Force PNG (Lossless)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Global Action Button -->
+                <button id="compress-all-btn" onclick="startBatchCompression()" class="w-full mt-4 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-600/25 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Compress All Files</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="workspace-container" class="space-y-6">
+            <!-- Queue Header & Actions -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:px-6">
+                <div class="flex items-center space-x-3">
+                    <h3 class="font-bold text-slate-200 text-base">File Queue</h3>
+                    <span id="file-count-badge" class="bg-indigo-500/10 text-indigo-400 text-xs font-bold px-2.5 py-1 rounded-full border border-indigo-500/20">0 Files</span>
+                </div>
+                <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                    <button onclick="clearAllFiles()" class="text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 transition">
+                        <i class="fa-solid fa-trash mr-1.5"></i> Clear All
+                    </button>
+                    <button id="download-all-btn" onclick="downloadAllZip()" disabled class="text-xs font-semibold text-white px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-file-zipper mr-1.5"></i> Download All (ZIP)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty State Notice -->
+            <div id="empty-state" class="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl">
+                <div class="w-16 h-16 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl mb-3">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h4 class="font-bold text-slate-300 text-base mb-1">No files uploaded yet</h4>
+                <p class="text-slate-500 text-sm">Upload images or PDFs above to begin strict range KB compression.</p>
+            </div>
+
+            <!-- File Cards Container -->
+            <div id="file-list" class="space-y-4"></div>
+        </div>
+
+    </main>
+
+    <div id="preview-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-slate-200" id="modal-filename">Comparison Viewer</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="py-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto flex-grow">
+                <!-- Original Preview -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 bg-slate-900 px-3 py-1 rounded-full">Original File</span>
+                    <div class="w-full h-64 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center mb-4 relative border border-slate-800">
+                        <img id="modal-orig-img" class="max-h-full max-w-full object-contain hidden" alt="Original preview">
+                        <div id="modal-orig-pdf-badge" class="hidden text-center p-6">
+                            <i class="fa-solid fa-file-pdf text-rose-500 text-5xl mb-2"></i>
+                            <p class="text-sm font-semibold text-slate-300">PDF Document</p>
+                        </div>
+                    </div>
+                    <div class="w-full grid grid-cols-2 gap-2 text-xs text-slate-400">
+                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">Size: <span id="modal-orig-size" class="font-bold text-slate-200">0 KB</span></div>
+                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">Dimensions: <span id="modal-orig-dims" class="font-bold text-slate-200">-</span></div>
+                    </div>
+                </div>
+
+                <!-- Compressed Preview -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
+                    <span id="modal-result-badge-container" class="text-xs font-bold uppercase tracking-wider mb-3 px-3 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Within Target Range</span>
+                    <div class="w-full h-64 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center mb-4 relative border border-slate-800">
+                        <img id="modal-comp-img" class="max-h-full max-w-full object-contain hidden" alt="Compressed preview">
+                        <div id="modal-comp-pdf-badge" class="hidden text-center p-6">
+                            <i class="fa-solid fa-file-pdf text-emerald-500 text-5xl mb-2"></i>
+                            <p class="text-sm font-semibold text-slate-300">Compressed PDF</p>
+                        </div>
+                    </div>
+                    <div class="w-full grid grid-cols-2 gap-2 text-xs text-slate-400">
+                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">Size: <span id="modal-comp-size" class="font-bold text-emerald-400">0 KB</span></div>
+                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">Reduction: <span id="modal-reduction" class="font-bold text-emerald-400">0%</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-sm transition">Close</button>
+                <button id="modal-download-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Download File</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500 mt-12">
+        <p>&copy; 2026 PixelCompress Pro. All strict-range processing is performed securely on your local device.</p>
+    </footer>
+
+    <script>
+        // Global state storage
+        let fileQueue = [];
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileListEl = document.getElementById('file-list');
+        const emptyStateEl = document.getElementById('empty-state');
+        const fileCountBadge = document.getElementById('file-count-badge');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const minKbInput = document.getElementById('min-kb');
+        const maxKbInput = document.getElementById('max-kb');
+        const outputFormatSelect = document.getElementById('output-format');
+
+        // Drag and Drop Event Listeners
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-active');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            fileInput.value = ''; // Reset input
+        });
+
+        function setPreset(min, max) {
+            minKbInput.value = min;
+            maxKbInput.value = max;
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+                if(btn.textContent.includes(`${min} - ${max} KB`)) {
+                    btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+                }
+            });
+        }
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.match('image.*') && file.type !== 'application/pdf') {
+                    alert('Skipped ' + file.name + ': Only Images (JPG, PNG, WEBP) and PDFs are supported.');
+                    continue;
+                }
+
+                const fileObj = {
+                    id: 'file_' + Math.random().toString(36).substr(2, 9),
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    status: 'pending', // pending, compressing, success, error
+                    compressedBlob: null,
+                    compressedSize: 0,
+                    dimensions: '-',
+                    compressedDimensions: '-',
+                    errorMsg: ''
+                };
+                fileQueue.push(fileObj);
+            }
+            renderQueue();
+        }
+
+        function clearAllFiles() {
+            fileQueue = [];
+            renderQueue();
+        }
+
+        function removeFile(id) {
+            fileQueue = fileQueue.filter(f => f.id !== id);
+            renderQueue();
+        }
+
+        function renderQueue() {
+            fileCountBadge.textContent = fileQueue.length + (fileQueue.length === 1 ? ' File' : ' Files');
+            
+            if (fileQueue.length === 0) {
+                emptyStateEl.classList.remove('hidden');
+                fileListEl.innerHTML = '';
+                downloadAllBtn.disabled = true;
+                return;
+            }
+
+            emptyStateEl.classList.add('hidden');
+            let html = '';
+
+            fileQueue.forEach(item => {
+                let statusBadge = '';
+                let actionBtns = '';
+                
+                if (item.status === 'pending') {
+                    statusBadge = `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs px-2.5 py-1 rounded-full font-semibold">Pending</span>`;
+                    actionBtns = `<button onclick="compressSingle('${item.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition shadow-sm"><i class="fa-solid fa-compress mr-1"></i> Compress</button>`;
+                } else if (item.status === 'compressing') {
+                    statusBadge = `<span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs px-2.5 py-1 rounded-full font-semibold flex items-center"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Compressing...</span>`;
+                    actionBtns = `<span class="text-xs text-slate-500">Processing...</span>`;
+                } else if (item.status === 'success') {
+                    const reduction = Math.round((1 - (item.compressedSize / item.size)) * 100);
+                    statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-1 rounded-full font-semibold">In Range (-${reduction}%)</span>`;
+                    actionBtns = `
+                        <button onclick="openModal('${item.id}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-eye mr-1"></i> View</button>
+                        <button onclick="downloadSingle('${item.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm"><i class="fa-solid fa-download mr-1"></i> Download</button>
+                    `;
+                } else if (item.status === 'error') {
+                    statusBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs px-2.5 py-1 rounded-full font-semibold" title="${item.errorMsg}">Failed</span>`;
+                    actionBtns = `<button onclick="compressSingle('${item.id}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition">Retry</button>`;
+                }
+
+                const fileIcon = item.type === 'application/pdf' ? '<i class="fa-solid fa-file-pdf text-rose-500 text-xl"></i>' : '<i class="fa-solid fa-file-image text-indigo-400 text-xl"></i>';
+
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-slate-700">
+                        <div class="flex items-center space-x-3.5 min-w-0">
+                            <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
+                                ${fileIcon}
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="font-bold text-slate-200 text-sm truncate" title="${item.name}">${item.name}</h4>
+                                <div class="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
+                                    <span>${formatBytes(item.size)}</span>
+                                    <span>&bull;</span>
+                                    <span>${item.type === 'application/pdf' ? 'PDF Document' : item.type.split('/')[1].toUpperCase()}</span>
+                                    ${item.compressedSize ? `<span>&rarr;</span><span class="font-bold text-emerald-400">${formatBytes(item.compressedSize)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800">
+                            ${statusBadge}
+                            <div class="flex items-center space-x-2">
+                                ${actionBtns}
+                                <button onclick="removeFile('${item.id}')" class="p-2 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            fileListEl.innerHTML = html;
+            const hasSuccess = fileQueue.some(f => f.status === 'success');
+            downloadAllBtn.disabled = !hasSuccess;
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        async function startBatchCompression() {
+            const pendingFiles = fileQueue.filter(f => f.status === 'pending' || f.status === 'error');
+            if (pendingFiles.length === 0) {
+                alert('No pending files to compress!');
+                return;
+            }
+
+            for (const item of pendingFiles) {
+                await compressSingle(item.id, false);
+            }
+        }
+
+        async function compressSingle(id, showAlertOnFail = true) {
+            const item = fileQueue.find(f => f.id === id);
+            if (!item) return;
+
+            item.status = 'compressing';
+            renderQueue();
+
+            const minKB = parseFloat(minKbInput.value);
+            const maxKB = parseFloat(maxKbInput.value);
+
+            if (minKB >= maxKB) {
+                item.status = 'error';
+                item.errorMsg = 'Min KB must be strictly less than Max KB';
+                renderQueue();
+                if (showAlertOnFail) alert(item.errorMsg);
+                return;
+            }
+
+            const minBytes = minKB * 1024;
+            const maxBytes = maxKB * 1024;
+
+            try {
+                if (item.type === 'application/pdf') {
+                    await compressPDF(item, minBytes, maxBytes);
+                } else {
+                    await compressImage(item, minBytes, maxBytes);
+                }
+                item.status = 'success';
+            } catch (err) {
+                console.error(err);
+                item.status = 'error';
+                item.errorMsg = err.message || 'Compression failed';
+                if (showAlertOnFail) {
+                    alert('Failed to compress ' + item.name + ': ' + item.errorMsg);
+                }
+            }
+            renderQueue();
+        }
+
+        // Strict Range Binary Search Image Compressor
+        async function compressImage(item, minBytes, maxBytes) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = async function() {
+                        try {
+                            item.dimensions = `${img.width}x${img.height}`;
+                            const canvas = document.createElement('canvas');
+                            let ctx = canvas.getContext('2d');
+
+                            let width = img.width;
+                            let height = img.height;
+                            let format = outputFormatSelect.value;
+                            if (format === 'original') {
+                                format = item.type;
+                                if (format !== 'image/jpeg' && format !== 'image/webp' && format !== 'image/png') {
+                                    format = 'image/jpeg';
+                                }
+                            }
+
+                            // If original file is already inside target range and format matches, keep it
+                            if (item.size >= minBytes && item.size <= maxBytes && format === item.type) {
+                                item.compressedBlob = item.file;
+                                item.compressedSize = item.size;
+                                item.compressedDimensions = item.dimensions;
+                                resolve();
+                                return;
+                            }
+
+                            let bestBlob = null;
+                            let bestSize = Infinity;
+                            let bestWidth = width;
+                            let bestHeight = height;
+
+                            // Outer loop: Scale adjustment (resolution downscaling)
+                            let minScale = 0.05;
+                            let maxScale = 1.0;
+                            let found = false;
+
+                            for (let scaleIter = 0; scaleIter < 5; scaleIter++) {
+                                let currentScale = minScale + (maxScale - minScale) / 2;
+                                let cW = Math.max(48, Math.round(width * currentScale));
+                                let cH = Math.max(48, Math.round(height * currentScale));
+
+                                canvas.width = cW;
+                                canvas.height = cH;
+                                ctx.clearRect(0, 0, cW, cH);
+                                ctx.drawImage(img, 0, 0, cW, cH);
+
+                                // Inner loop: Quality adjustment (0.02 to 0.98)
+                                let minQ = 0.02;
+                                let maxQ = 0.98;
+
+                                for (let qIter = 0; qIter < 7; qIter++) {
+                                    let q = minQ + (maxQ - minQ) / 2;
+                                    const blob = await new Promise(res => canvas.toBlob(res, format, q));
+                                    if (!blob) break;
+
+                                    if (blob.size >= minBytes && blob.size <= maxBytes) {
+                                        bestBlob = blob;
+                                        bestSize = blob.size;
+                                        bestWidth = cW;
+                                        bestHeight = cH;
+                                        found = true;
+                                        break;
+                                    } else if (blob.size > maxBytes) {
+                                        // Too large, decrease quality
+                                        maxQ = q;
+                                    } else {
+                                        // Too small, increase quality
+                                        minQ = q;
+                                        // Keep track of closest below max in case exact range isn't hit
+                                        if (blob.size > bestSize && blob.size < maxBytes) {
+                                            bestBlob = blob;
+                                            bestSize = blob.size;
+                                            bestWidth = cW;
+                                            bestHeight = cH;
+                                        }
+                                    }
+                                }
+
+                                if (found) break;
+
+                                // Adjust scale based on last trial size
+                                const testBlob = await new Promise(res => canvas.toBlob(res, format, 0.5));
+                                if (testBlob && testBlob.size > maxBytes) {
+                                    maxScale = currentScale; // Need smaller dimensions
+                                } else {
+                                    minScale = currentScale; // Need larger dimensions
+                                }
+                            }
+
+                            // Fallback if strict range wasn't precisely struck: pick closest or smallest aggressive render
+                            if (!bestBlob) {
+                                canvas.width = Math.max(64, Math.round(width * 0.25));
+                                canvas.height = Math.max(64, Math.round(height * 0.25));
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                bestBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.3));
+                                bestSize = bestBlob.size;
+                                bestWidth = canvas.width;
+                                bestHeight = canvas.height;
+                            }
+
+                            item.compressedBlob = bestBlob;
+                            item.compressedSize = bestSize;
+                            item.compressedDimensions = `${bestWidth}x${bestHeight}`;
+                            resolve();
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    img.onerror = () => reject(new Error('Invalid image file format'));
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsDataURL(item.file);
+            });
+        }
+
+        // Strict Range PDF Compressor using PDF.js & pdf-lib
+        async function compressPDF(item, minBytes, maxBytes) {
+            const arrayBuffer = await item.file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+            const numPages = pdfDoc.numPages;
+
+            const pdfLibDoc = await PDFLib.PDFDocument.create();
+            const pageTargetMin = minBytes / numPages;
+            const pageTargetMax = maxBytes / numPages;
+
+            for (let i = 1; i <= numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 1.25 });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                const pageBlob = await compressCanvasToRange(canvas, Math.max(10 * 1024, pageTargetMin), pageTargetMax);
+                const pageImageBytes = await pageBlob.arrayBuffer();
+                let embeddedImage = await pdfLibDoc.embedJpg(pageImageBytes);
+
+                const newPage = pdfLibDoc.addPage([viewport.width / 1.25, viewport.height / 1.25]);
+                newPage.drawImage(embeddedImage, {
+                    x: 0,
+                    y: 0,
+                    width: newPage.getWidth(),
+                    height: newPage.getHeight(),
+                });
+            }
+
+            const pdfBytes = await pdfLibDoc.save();
+            item.compressedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            item.compressedSize = item.compressedBlob.size;
+            item.compressedDimensions = `${numPages} Pages`;
+        }
+
+        async function compressCanvasToRange(canvas, minBytes, maxBytes) {
+            let minQ = 0.05;
+            let maxQ = 0.90;
+            let bestBlob = null;
+
+            for (let i = 0; i < 6; i++) {
+                let q = minQ + (maxQ - minQ) / 2;
+                const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', q));
+                if (!blob) break;
+
+                if (blob.size >= minBytes && blob.size <= maxBytes) {
+                    bestBlob = blob;
+                    break;
+                } else if (blob.size > maxBytes) {
+                    maxQ = q;
+                } else {
+                    minQ = q;
+                    bestBlob = blob;
+                }
+            }
+
+            if (!bestBlob) {
+                bestBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.2));
+            }
+            return bestBlob;
+        }
+
+        function downloadSingle(id) {
+            const item = fileQueue.find(f => f.id === id);
+            if (!item || !item.compressedBlob) return;
+            const ext = item.type === 'application/pdf' ? '.pdf' : '.' + item.compressedBlob.type.split('/')[1];
+            const baseName = item.name.substring(0, item.name.lastIndexOf('.')) || item.name;
+            saveAs(item.compressedBlob, `${baseName}_compressed_${minKbInput.value}-${maxKbInput.value}KB${ext}`);
+        }
+
+        async function downloadAllZip() {
+            const successFiles = fileQueue.filter(f => f.status === 'success' && f.compressedBlob);
+            if (successFiles.length === 0) return;
+
+            const zip = new JSZip();
+            successFiles.forEach(item => {
+                const ext = item.type === 'application/pdf' ? '.pdf' : '.' + item.compressedBlob.type.split('/')[1];
+                const baseName = item.name.substring(0, item.name.lastIndexOf('.')) || item.name;
+                zip.file(`${baseName}_compressed_${minKbInput.value}-${maxKbInput.value}KB${ext}`, item.compressedBlob);
+            });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `Compressed_Files_${minKbInput.value}-${maxKbInput.value}KB.zip`);
+        }
+
+        // Modal Comparison Viewer
+        let currentModalItem = null;
+        function openModal(id) {
+            const item = fileQueue.find(f => f.id === id);
+            if (!item) return;
+            currentModalItem = item;
+
+            document.getElementById('modal-filename').textContent = item.name;
+            document.getElementById('modal-orig-size').textContent = formatBytes(item.size);
+            document.getElementById('modal-orig-dims').textContent = item.dimensions;
+            document.getElementById('modal-comp-size').textContent = formatBytes(item.compressedSize);
+            
+            const reduction = Math.round((1 - (item.compressedSize / item.size)) * 100);
+            document.getElementById('modal-reduction').textContent = `${reduction}% smaller`;
+
+            const minBytes = parseFloat(minKbInput.value) * 1024;
+            const maxBytes = parseFloat(maxKbInput.value) * 1024;
+            const badgeContainer = document.getElementById('modal-result-badge-container');
+
+            if (item.compressedSize >= minBytes && item.compressedSize <= maxBytes) {
+                badgeContainer.className = "text-xs font-bold uppercase tracking-wider mb-3 px-3 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                badgeContainer.textContent = "Strictly Within Target Range";
+            } else {
+                badgeContainer.className = "text-xs font-bold uppercase tracking-wider mb-3 px-3 py-1 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20";
+                badgeContainer.textContent = "Closest Achievable Size";
+            }
+
+            const origImg = document.getElementById('modal-orig-img');
+            const origPdfBadge = document.getElementById('modal-orig-pdf-badge');
+            const compImg = document.getElementById('modal-comp-img');
+            const compPdfBadge = document.getElementById('modal-comp-pdf-badge');
+
+            if (item.type === 'application/pdf') {
+                origImg.classList.add('hidden');
+                origPdfBadge.classList.remove('hidden');
+                compImg.classList.add('hidden');
+                compPdfBadge.classList.remove('hidden');
+            } else {
+                origPdfBadge.classList.add('hidden');
+                origImg.classList.remove('hidden');
+                origImg.src = URL.createObjectURL(item.file);
+
+                compPdfBadge.classList.add('hidden');
+                compImg.classList.remove('hidden');
+                compImg.src = URL.createObjectURL(item.compressedBlob);
+            }
+
+            document.getElementById('modal-download-btn').onclick = () => downloadSingle(item.id);
+            document.getElementById('preview-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('preview-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
